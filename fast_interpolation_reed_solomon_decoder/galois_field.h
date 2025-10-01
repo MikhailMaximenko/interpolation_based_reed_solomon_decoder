@@ -14,6 +14,10 @@ struct galois_field
 
 	std::vector<size_t> _log_table;
 	std::vector<size_t> _exp_table;
+	size_t _minus_one;
+	size_t _inverse_element; // n^(-1) (n from idft)
+
+	// if _n is not power of 2 need to store another field over which dft/idft will be applied
 
 	galois_field(size_t, size_t, std::vector<size_t> const&);
 
@@ -22,6 +26,9 @@ struct galois_field
 	size_t sub(size_t, size_t) const;
 	size_t divide(size_t, size_t) const;
 	size_t inverse(size_t) const;
+
+	void fast_poly_multiplication(std::vector<size_t>&, std::vector<size_t>&);
+
 
 private:
 	void init();
@@ -33,5 +40,8 @@ private:
 	size_t poly_to_num(std::vector<size_t> const&) const;
 	void shift_poly(std::vector<size_t>&) const;
 
+	size_t increment(size_t) const;
 
+	void DFT(std::vector<size_t> &, size_t);
+	void IDFT(std::vector<size_t>&, size_t);
 };

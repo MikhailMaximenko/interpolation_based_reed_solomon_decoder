@@ -4,8 +4,6 @@
 #include <stdexcept>
 #include <vector>
 
-//#include <cstddef>
-
 
 galois_field::galois_field(size_t p, size_t m, std::vector<size_t> const& gen) 
 	: _p(p)
@@ -15,6 +13,7 @@ galois_field::galois_field(size_t p, size_t m, std::vector<size_t> const& gen)
 	, _generating_poly(gen)
 	, _log_table(_q) 
 	, _exp_table(_q)
+	, _minus_one(_p - 1)
 {
 	init();
 }
@@ -31,8 +30,6 @@ void galois_field::init() {
 		}
 	}
 	_exp_table[_n] = _exp_table[0];
-
-
 }
 
 std::vector<size_t> galois_field::inverse_add_init(std::vector<size_t> const& v) const {
@@ -85,8 +82,26 @@ void galois_field::shift_poly(std::vector<size_t>& a) const {
 	a[0] = 0;
 }
 
-size_t galois_field::add(size_t, size_t) const { return 0; }
-size_t galois_field::sub(size_t, size_t) const { return 0; }
+size_t galois_field::add(size_t a, size_t b) const { 
+	if (a == 0) return b;
+	if (b == 0) return a;
+	size_t m, n;
+	m = _log_table[a];
+	n = _log_table[b];
+	if (m < n) {
+		m = _log_table[increment(a)];
+		size_t log_sum = (m + n) % _n;
+		return _exp_table[log_sum];
+	}
+	else {
+		n = _log_table[increment(b)];
+		size_t log_sum = (m + n) % _n;
+		return _exp_table[log_sum];
+	}
+}
+size_t galois_field::sub(size_t a, size_t b) const { 
+	return add(a, multiply(b, _minus_one)); 
+}
 
 size_t galois_field::multiply(size_t a, size_t b) const { 
 	if (a == 0 || b == 0) {
@@ -102,3 +117,43 @@ size_t galois_field::inverse(size_t a) const {
 size_t galois_field::divide(size_t a, size_t b) const { 
 	return multiply(a, inverse(b)); 
 }
+
+void galois_field::fast_poly_multiplication(std::vector<size_t>& a, std::vector<size_t>& b) {
+	DFT(a, _exp_table[1]);
+	DFT(b, _exp_table[1]);
+	for (size_t i = 0; i < a.size(); ++i) {
+		a[i] = multiply(a[i], b[i]);
+	}
+	IDFT(a, inverse(_exp_table[1]));
+}
+
+size_t galois_field::increment(size_t a) const {
+	size_t r = a % _p;
+	a = (a - r) + ((r + 1) % _p);
+	return a;
+}
+
+void galois_field::DFT(std::vector<size_t>& a, size_t gen_elem) {
+	std::vector<size_t> a0(a.size() / 2), a1(a.size() / 2);
+	for (size_t i = 0; i < a.size() / 2; ++i) {
+		a0[i] = a[2 * i];
+		a1[i] = a[2 * i + 1];
+	}
+	size_t new_gen = multiply(gen_elem, gen_elem);
+	DFT(a0, new_gen);
+	DFT(a1, new_gen);
+	size_t base = 1;
+	for (size_t i = 0; i < a.size() / 2; ++i) {
+		a[i] = add(a0[i], multiply(base, a1[i]));
+		a[i + a.size() / 2] = sub(a0[i], multiply(base, a1[i]));
+		base = multiply(base, gen_elem);
+	}
+}
+
+void galois_field::IDFT(std::vector<size_t>& a, size_t gen_elem) {
+	DFT(a, gen_elem);
+	for (size_t i = 0; i < a.size(); ++i) {
+		a[i] = multiply(a[i], _inverse_element);
+	}
+}
+
