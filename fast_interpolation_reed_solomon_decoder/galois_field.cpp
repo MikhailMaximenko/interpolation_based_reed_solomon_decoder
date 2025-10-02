@@ -75,11 +75,12 @@ size_t galois_field::poly_to_num(std::vector<size_t> const& a) const {
 	return res;
 }
 
-void galois_field::shift_poly(std::vector<size_t>& a) const {
+std::vector<size_t>& galois_field::shift_poly(std::vector<size_t>& a) const {
 	for (ptrdiff_t i = a.size() - 1; i >= 1; --i) {
 		a[i] = a[i - 1];
 	}
 	a[0] = 0;
+	return a;
 }
 
 size_t galois_field::add(size_t a, size_t b) const { 
@@ -118,13 +119,64 @@ size_t galois_field::divide(size_t a, size_t b) const {
 	return multiply(a, inverse(b)); 
 }
 
-void galois_field::fast_poly_multiplication(std::vector<size_t>& a, std::vector<size_t>& b) {
+std::vector<size_t>& galois_field::fast_poly_multiplication(std::vector<size_t>& a, std::vector<size_t>& b) {
 	DFT(a, _exp_table[1]);
 	DFT(b, _exp_table[1]);
 	for (size_t i = 0; i < a.size(); ++i) {
 		a[i] = multiply(a[i], b[i]);
 	}
-	IDFT(a, inverse(_exp_table[1]));
+	return IDFT(a, inverse(_exp_table[1]));
+}
+
+std::vector<size_t>& galois_field::fast_poly_division(std::vector<size_t>& a, std::vector<size_t>& b) {
+	if (a.size() < b.size()) {
+		return a;
+	}
+	return rev_poly()
+}
+
+std::vector<std::pair<std::vector<size_t>, std::vector<size_t>>> galois_field::EMGCD(std::vector<size_t> const& a, std::vector<size_t> const& b) {
+	if (b.size() < a.size() / 2) {
+		return { {a, b}, {{1}, {0}}, {{0}, {1}} };
+	}
+	std::vector<size_t> b0, b1, c0, c1;
+	size_t m = a.size() / 2 + a.size() % 2;
+	std::tie(c0, b0) = split_poly(a, m);
+	std::tie(c1, b1) = split_poly(b, m);
+
+	auto u1w1v1 = EMGCD(b0, b1);
+	auto u1w1v1c = u1w1v1;
+	auto c0c = c0;
+	auto c0cc = c0;
+	
+	std::vector<size_t> d,e;
+	
+	e = add_poly(add_poly(fast_poly_multiplication(u1w1v1[1].second, c0), fast_poly_multiplication(u1w1v1[2].second, c1)), u1w1v1[0].second, m);
+
+	d = add_poly(add_poly(fast_poly_multiplication(u1w1v1[1].first, c0), fast_poly_multiplication(u1w1v1[2].first, c1)), u1w1v1[0].first, m);
+
+	if (e.size() < a.size() / 2) {
+		return { {d, e}, u1w1v1c[1], u1w1v1c[2] };
+	}
+	else {
+		// q = d / e // fast division needs to be implemented
+		// f = d % e
+		// k = 2m - deg(e)
+		// E = g0*x^k + h0
+		// F = g1*x^k + h1
+		// u2w2v2 = EMGCD(g0, g1)
+		// return 
+	}
+
+	// assume immplemented
+
+}
+
+std::pair<std::vector<size_t>, std::vector<size_t>> galois_field::AD(std::vector<size_t>& a) {
+	
+
+
+
 }
 
 size_t galois_field::increment(size_t a) const {
@@ -133,7 +185,7 @@ size_t galois_field::increment(size_t a) const {
 	return a;
 }
 
-void galois_field::DFT(std::vector<size_t>& a, size_t gen_elem) {
+std::vector<size_t>& galois_field::DFT(std::vector<size_t>& a, size_t gen_elem) {
 	std::vector<size_t> a0(a.size() / 2), a1(a.size() / 2);
 	for (size_t i = 0; i < a.size() / 2; ++i) {
 		a0[i] = a[2 * i];
@@ -148,12 +200,56 @@ void galois_field::DFT(std::vector<size_t>& a, size_t gen_elem) {
 		a[i + a.size() / 2] = sub(a0[i], multiply(base, a1[i]));
 		base = multiply(base, gen_elem);
 	}
+	return a;
 }
 
-void galois_field::IDFT(std::vector<size_t>& a, size_t gen_elem) {
+std::vector<size_t>& galois_field::IDFT(std::vector<size_t>& a, size_t gen_elem) {
 	DFT(a, gen_elem);
 	for (size_t i = 0; i < a.size(); ++i) {
 		a[i] = multiply(a[i], _inverse_element);
 	}
+	return a;
+}
+
+std::pair<std::vector<size_t>, std::vector<size_t>> galois_field::split_poly(std::vector<size_t> const& p, size_t m) {
+	std::vector<size_t> a, b;
+	for (size_t i = 0; i < p.size(); ++i) {
+		if (i < m) {
+			a.push_back(p[i]);
+		}
+		else
+		{
+			b.push_back(p[i]);
+		}
+	}
+	return { std::move(a), std::move(b) };
+}
+
+std::vector<size_t>& galois_field::add_poly(std::vector<size_t>& a, std::vector<size_t>& b, size_t m = 0) {
+	for (size_t i = 0; i < b.size() + m; ++i) {
+		if (i < m && i >= a.size()) {
+			a.push_back(0);
+		}
+		else if (i >= m) {
+			if (i >= a.size()) {
+				a.push_back(b[i - m]);
+			}
+			else {
+				a.push_back(add(a[i], b[i - m]));
+			}
+		}
+	}
+	return a;
+}
+
+
+
+std::vector<size_t>& rev_poly(std::vector<size_t>& a) {
+	std::reverse(a.begin(), a.end());
+	return a;
+}
+
+std::vector<size_t> inv_poly(std::vector<size_t>&) {
+
 }
 

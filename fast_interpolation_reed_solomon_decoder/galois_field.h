@@ -27,8 +27,10 @@ struct galois_field
 	size_t divide(size_t, size_t) const;
 	size_t inverse(size_t) const;
 
-	void fast_poly_multiplication(std::vector<size_t>&, std::vector<size_t>&);
-
+	std::vector<size_t>& fast_poly_multiplication(std::vector<size_t>&, std::vector<size_t>&);
+	std::vector<size_t>& fast_poly_division(std::vector<size_t>&, std::vector<size_t>&);
+	std::vector<std::pair<std::vector<size_t>, std::vector<size_t>>> EMGCD(std::vector<size_t> const&, std::vector<size_t> const&);
+	std::pair<std::vector<size_t>, std::vector<size_t>> AD(std::vector<size_t> &);
 
 private:
 	void init();
@@ -38,10 +40,18 @@ private:
 	std::vector<size_t> multiply_by_const_init(std::vector<size_t> const&, size_t) const;
 
 	size_t poly_to_num(std::vector<size_t> const&) const;
-	void shift_poly(std::vector<size_t>&) const;
+	std::vector<size_t>& shift_poly(std::vector<size_t>&) const;
 
 	size_t increment(size_t) const;
 
-	void DFT(std::vector<size_t> &, size_t);
-	void IDFT(std::vector<size_t>&, size_t);
+	std::vector<size_t>& DFT(std::vector<size_t> &, size_t);
+	std::vector<size_t>& IDFT(std::vector<size_t>&, size_t);
+
+	std::pair<std::vector<size_t>, std::vector<size_t>> split_poly(std::vector<size_t> const&, size_t);
+
+	std::vector<size_t>& add_poly(std::vector<size_t>&, std::vector<size_t>&, size_t);
+
+	std::vector<size_t>& rev_poly(std::vector<size_t>&);
+
+	std::vector<size_t> inv_poly(std::vector<size_t>&);
 };
