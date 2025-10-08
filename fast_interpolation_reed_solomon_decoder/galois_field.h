@@ -53,5 +53,5 @@ private:
 
 	std::vector<size_t>& rev_poly(std::vector<size_t>&);
 
-	std::vector<size_t> inv_poly(std::vector<size_t>&);
+	std::vector<size_t> inv_poly(std::vector<size_t>&, size_t);
 };

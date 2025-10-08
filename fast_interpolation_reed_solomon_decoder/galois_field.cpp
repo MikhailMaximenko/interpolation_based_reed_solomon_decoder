@@ -5,6 +5,19 @@
 #include <vector>
 
 
+#ifdef __GNUC__
+#define COUNT_LEADING(v) __builtin_ctzll(v)
+#else
+#define COUNT_LEADING(v) _tzcnt_u64(v)
+#endif
+
+#ifdef __GNUC__
+#define COUNT_TRAILING(v) __builtin_clzll(v)
+#else
+#define COUNT_TRAILING(v) _lzcnt_u64(v)
+#endif
+
+
 galois_field::galois_field(size_t p, size_t m, std::vector<size_t> const& gen) 
 	: _p(p)
 	, _m(m)
@@ -132,7 +145,7 @@ std::vector<size_t>& galois_field::fast_poly_division(std::vector<size_t>& a, st
 	if (a.size() < b.size()) {
 		return a;
 	}
-	return rev_poly()
+	//return rev_poly();
 }
 
 std::vector<std::pair<std::vector<size_t>, std::vector<size_t>>> galois_field::EMGCD(std::vector<size_t> const& a, std::vector<size_t> const& b) {
@@ -151,9 +164,9 @@ std::vector<std::pair<std::vector<size_t>, std::vector<size_t>>> galois_field::E
 	
 	std::vector<size_t> d,e;
 	
-	e = add_poly(add_poly(fast_poly_multiplication(u1w1v1[1].second, c0), fast_poly_multiplication(u1w1v1[2].second, c1)), u1w1v1[0].second, m);
+	e = add_poly(add_poly(fast_poly_multiplication(u1w1v1[1].second, c0), fast_poly_multiplication(u1w1v1[2].second, c1), 0), u1w1v1[0].second, m);
 
-	d = add_poly(add_poly(fast_poly_multiplication(u1w1v1[1].first, c0), fast_poly_multiplication(u1w1v1[2].first, c1)), u1w1v1[0].first, m);
+	d = add_poly(add_poly(fast_poly_multiplication(u1w1v1[1].first, c0), fast_poly_multiplication(u1w1v1[2].first, c1), 0), u1w1v1[0].first, m);
 
 	if (e.size() < a.size() / 2) {
 		return { {d, e}, u1w1v1c[1], u1w1v1c[2] };
@@ -225,7 +238,7 @@ std::pair<std::vector<size_t>, std::vector<size_t>> galois_field::split_poly(std
 	return { std::move(a), std::move(b) };
 }
 
-std::vector<size_t>& galois_field::add_poly(std::vector<size_t>& a, std::vector<size_t>& b, size_t m = 0) {
+std::vector<size_t>& galois_field::add_poly(std::vector<size_t>& a, std::vector<size_t>& b, size_t m) {
 	for (size_t i = 0; i < b.size() + m; ++i) {
 		if (i < m && i >= a.size()) {
 			a.push_back(0);
@@ -244,12 +257,14 @@ std::vector<size_t>& galois_field::add_poly(std::vector<size_t>& a, std::vector<
 
 
 
-std::vector<size_t>& rev_poly(std::vector<size_t>& a) {
+std::vector<size_t>& galois_field::rev_poly(std::vector<size_t>& a) {
 	std::reverse(a.begin(), a.end());
 	return a;
 }
 
-std::vector<size_t> inv_poly(std::vector<size_t>&) {
+std::vector<size_t> galois_field::inv_poly(std::vector<size_t>& a, size_t mod) {
+	size_t g0 = inverse(a[0]);
+	size_t r = COUNT_TRAILING(mod);
 
 }
 
