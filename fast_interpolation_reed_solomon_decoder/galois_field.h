@@ -5,10 +5,17 @@
 
 struct galois_field
 {
+	// original field size
 	size_t _p;
+
+	// power of extension
 	size_t _m;
-	size_t _q;
-	size_t _n;
+
+	// extention field size
+	size_t _q; 
+	
+	// multiplicative group size
+	size_t _n; 
 
 	std::vector<size_t> _generating_poly;
 

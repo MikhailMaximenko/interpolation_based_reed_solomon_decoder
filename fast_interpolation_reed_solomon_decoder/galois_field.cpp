@@ -3,7 +3,7 @@
 #include <cstddef>
 #include <stdexcept>
 #include <vector>
-
+#include <bit>
 
 #ifdef __GNUC__
 #define COUNT_LEADING(v) __builtin_ctzll(v)
@@ -188,7 +188,7 @@ std::vector<std::pair<std::vector<size_t>, std::vector<size_t>>> galois_field::E
 std::pair<std::vector<size_t>, std::vector<size_t>> galois_field::AD(std::vector<size_t>& a) {
 	
 
-
+	return {};
 
 }
 
@@ -264,7 +264,9 @@ std::vector<size_t>& galois_field::rev_poly(std::vector<size_t>& a) {
 
 std::vector<size_t> galois_field::inv_poly(std::vector<size_t>& a, size_t mod) {
 	size_t g0 = inverse(a[0]);
-	size_t r = COUNT_TRAILING(mod);
+	size_t r = std::countl_zero(mod);
+
+
 
 }
 
