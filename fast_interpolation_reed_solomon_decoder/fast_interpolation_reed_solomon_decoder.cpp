@@ -2,12 +2,22 @@
 //
 
 #include "fast_interpolation_reed_solomon_decoder.h"
+#include "galois_field.h"
 #include <bit>
 
 int main()
 {
-	uint64_t a = 8;
-	std::cout << std::countr_zero(8ull) << "\n";
+	galois_field gf(11, 1, { 9, 1 });
+	for (auto i : gf._log_table) {
+		std::cout << i << " ";
+	}
+	std::cout << "\n";
+	for (auto i : gf._exp_table) {
+		std::cout << i << " ";
+	}
+	std::cout << "\n";
+
+	std::cout << gf.divide(8, 10) << "\n";
 
 
 	return 0;
