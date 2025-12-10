@@ -2,7 +2,9 @@
 // or project specific include files.
 
 #pragma once
-
+#include "galois_field.h"
 #include <iostream>
 
-// TODO: Reference additional headers your program requires here.
+struct InterpolationBasedFastRSDecoder {
+	galois_field _gf;
+};

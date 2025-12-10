@@ -4,6 +4,7 @@
 #include <stdexcept>
 #include <vector>
 #include <bit>
+#include <cassert>
 
 #include <iostream>
 
@@ -162,7 +163,7 @@ std::array<std::pair<std::vector<size_t>, std::vector<size_t>>, 3>&
 		dst[2].second[0] = 1;
 		return dst;
 	}
-	std::array<std::vector<size_t>, 12>& locals = _emgcd_tmp_polynomials[tmp_num];
+	auto& locals = _emgcd_tmp_polynomials[tmp_num];
 	std::array<std::pair<std::vector<size_t>, std::vector<size_t>>, 3>& result = _emgcd_tmp_result[tmp_num];
 	//std::vector<size_t> b0, b1, c0, c1;
 	// tmp layout:
@@ -309,12 +310,16 @@ void galois_field::AD(std::vector<size_t>& a, size_t n, std::vector<size_t>& dst
 	dst2 = multipy_poly_by_const(_ad_tmp_emgcd_results[1][3].second, inverse(_ad_tmp_emgcd_results[1][0].second[degree(_ad_tmp_emgcd_results[1][0].second)]));
 }
 
-void galois_field::SOLVE_TOEPITZ(std::vector<size_t>& a, std::vector<size_t>& b, size_t n, std::vector<size_t>& dst) {
+std::vector<size_t>& galois_field::SOLVE_TOEPITZ(std::vector<size_t>& a, std::vector<size_t>& b, size_t n, std::vector<size_t>& dst) {
 	AD(a, n, _ad_x, _ad_y);
-	rev_poly(b, _b_rev, n);
-	remainder_of_power(rev_poly(_ad_y, , n + 1), n + 1);
-
-
+	assert(_ad_x[0] != 0);
+	rev_poly(b, _solve_toeplitz_tmp[0], n);
+	remainder_of_power(fast_poly_multiplication(rev_poly(_ad_x, _solve_toeplitz_tmp[1], n + 1), _solve_toeplitz_tmp[0], _solve_toeplitz_tmp[2]), n + 1);
+	remainder_of_power(fast_poly_multiplication(_ad_y, _solve_toeplitz_tmp[0], _solve_toeplitz_tmp[3]), n + 1);
+	return multipy_poly_by_const(remainder_of_power(sub_poly(
+		fast_poly_multiplication(_ad_x, rev_poly(_solve_toeplitz_tmp[3], _solve_toeplitz_tmp[4], n), _solve_toeplitz_tmp[1]),
+		fast_poly_multiplication(rev_poly(_ad_y, _solve_toeplitz_tmp[3], n + 1),
+								rev_poly(_solve_toeplitz_tmp[2], _solve_toeplitz_tmp[0], n), _solve_toeplitz_tmp[2]), dst), n + 1), inverse(_ad_x[0]));
 }
 
 
@@ -360,6 +365,21 @@ std::vector<size_t>& galois_field::add_poly(std::vector<size_t>& a, std::vector<
 	return a;
 }
 
+std::vector<size_t>& galois_field::sub_poly(std::vector<size_t>& a, std::vector<size_t>& b, std::vector<size_t>& dst) {
+	size_t i;
+	for (i = 0; i < a.size() && i < b.size(); ++i) {
+		dst[i] = add(a[i], multiply(b[i], _p - 1));
+	}
+	while (i < a.size()) {
+		dst[i] = a[i];
+		++i;
+	}
+	while (i < b.size()) {
+		dst[i] = multiply(b[i], _p - 1);
+		++i;
+	}
+	return dst;
+}
 
 std::vector<size_t>& galois_field::multipy_poly_by_const(std::vector<size_t>& p, size_t a) {
 	for (size_t i = 0; i < p.size(); ++i) {
@@ -383,11 +403,8 @@ std::vector<size_t> galois_field::inv_poly(std::vector<size_t>& src, std::vector
 	for (size_t i = 1; i < r; ++i) {
 		fast_poly_multiplication(dst, dst, _inverse_temporary1);
 		fast_poly_multiplication(src, _inverse_temporary1, _inverse_temporary2);
-		multipy_poly_by_const(_inverse_temporary2, _p - 1);
 		multipy_poly_by_const(dst, 2);
-		add_poly(dst, _inverse_temporary2, _inverse_temporary1, 0);
-
-
+		sub_poly(dst, _inverse_temporary2, _inverse_temporary1);
 		using std::swap;
 		swap(dst, _inverse_temporary1);
 	}

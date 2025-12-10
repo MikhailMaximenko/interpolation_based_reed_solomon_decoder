@@ -41,7 +41,7 @@ struct galois_field
 		EMGCD(std::vector<size_t> const&, std::vector<size_t> const&, std::array<std::pair<std::vector<size_t>, std::vector<size_t>>, 3>&, size_t);
 	void AD(std::vector<size_t>&, size_t, std::vector<size_t>&, std::vector<size_t>&);
 
-	void SOLVE_TOEPITZ(std::vector<size_t>&, std::vector<size_t>&, size_t, std::vector<size_t>&);
+	std::vector<size_t>& SOLVE_TOEPITZ(std::vector<size_t>&, std::vector<size_t>&, size_t, std::vector<size_t>&);
 
 	size_t degree(std::vector<size_t> const&);
 
@@ -61,6 +61,7 @@ private:
 	void split_poly(std::vector<size_t> const&, std::vector<size_t>&, std::vector<size_t>&, size_t);
 
 	std::vector<size_t>& add_poly(std::vector<size_t>&, std::vector<size_t>&, std::vector<size_t>&, size_t);
+	std::vector<size_t>& sub_poly(std::vector<size_t>&, std::vector<size_t>&, std::vector<size_t>&);
 
 	std::vector<size_t>& multipy_poly_by_const(std::vector<size_t>&, size_t);
 	std::vector<size_t>& rev_poly(std::vector<size_t>&, std::vector<size_t>&, size_t);
@@ -74,10 +75,12 @@ private:
 	std::vector<size_t> _inverse_temporary1;
 	std::vector<size_t> _inverse_temporary2;
 	std::vector<std::array<std::pair<std::vector<size_t>, std::vector<size_t>>, 3>> _emgcd_tmp_result;
-	std::vector<std::array<std::vector<size_t>, 12>> _emgcd_tmp_polynomials;
+	std::vector<std::array<std::vector<size_t>, 8>> _emgcd_tmp_polynomials;
 
 	std::array<std::array<std::pair<std::vector<size_t>, std::vector<size_t>>, 3>, 2> _ad_tmp_emgcd_results;
 	std::array<std::vector<size_t>, 3> _ad_tmp_polinomyals;
+
+	std::array<std::vector<size_t>, 12> _solve_toeplitz_tmp;
 
 	std::vector<size_t> _ad_x;
 	std::vector<size_t> _ad_y;
