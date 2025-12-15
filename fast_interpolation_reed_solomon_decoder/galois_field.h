@@ -35,6 +35,9 @@ struct galois_field
 	size_t divide(size_t, size_t) const;
 	size_t inverse(size_t) const;
 
+	std::vector<size_t>& DFT(std::vector<size_t>&, std::vector<size_t>&, size_t);
+	std::vector<size_t>& IDFT(std::vector<size_t>&, std::vector<size_t>&, size_t);
+
 	std::vector<size_t>& fast_poly_multiplication(std::vector<size_t>&, std::vector<size_t>&, std::vector<size_t>&);
 	std::vector<size_t>& fast_poly_division(std::vector<size_t>&, std::vector<size_t>&, std::vector<size_t>&, std::vector<size_t>&);
 	std::array<std::pair<std::vector<size_t>, std::vector<size_t>>, 3>& 
@@ -44,6 +47,9 @@ struct galois_field
 	std::vector<size_t>& SOLVE_TOEPITZ(std::vector<size_t>&, std::vector<size_t>&, size_t, std::vector<size_t>&);
 
 	size_t degree(std::vector<size_t> const&);
+	std::vector<size_t>& rev_poly(std::vector<size_t>&, std::vector<size_t>&, size_t);
+	std::vector<size_t>& add_poly(std::vector<size_t>&, std::vector<size_t>&, std::vector<size_t>&, size_t);
+	std::vector<size_t>& sub_poly(std::vector<size_t>&, std::vector<size_t>&, std::vector<size_t>&);
 
 private:
 	void init();
@@ -55,16 +61,11 @@ private:
 	size_t poly_to_num(std::vector<size_t> const&) const;
 	std::vector<size_t>& shift_poly(std::vector<size_t>&) const;
 
-	std::vector<size_t>& DFT(std::vector<size_t> &, std::vector<size_t>&, size_t);
-	std::vector<size_t>& IDFT(std::vector<size_t>&, std::vector<size_t>&, size_t);
 
 	void split_poly(std::vector<size_t> const&, std::vector<size_t>&, std::vector<size_t>&, size_t);
 
-	std::vector<size_t>& add_poly(std::vector<size_t>&, std::vector<size_t>&, std::vector<size_t>&, size_t);
-	std::vector<size_t>& sub_poly(std::vector<size_t>&, std::vector<size_t>&, std::vector<size_t>&);
-
 	std::vector<size_t>& multipy_poly_by_const(std::vector<size_t>&, size_t);
-	std::vector<size_t>& rev_poly(std::vector<size_t>&, std::vector<size_t>&, size_t);
+	
 
 	std::vector<size_t>& remainder_of_power(std::vector<size_t>&, size_t);
 	std::vector<size_t> inv_poly(std::vector<size_t>&, std::vector<size_t>&, size_t);
