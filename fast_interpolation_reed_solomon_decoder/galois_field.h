@@ -35,8 +35,11 @@ struct galois_field
 	size_t divide(size_t, size_t) const;
 	size_t inverse(size_t) const;
 
-	std::vector<size_t>& DFT(std::vector<size_t>&, std::vector<size_t>&, size_t);
-	std::vector<size_t>& IDFT(std::vector<size_t>&, std::vector<size_t>&, size_t);
+	std::vector<size_t>& DFT(std::vector<size_t>&, std::vector<size_t>&); // cyclotomic
+	std::vector<size_t>& IDFT(std::vector<size_t>&, std::vector<size_t>&); // cyclotomic
+
+	std::vector<size_t>& DFT(std::vector<size_t>&, std::vector<size_t>&, size_t, size_t); // binary architecture a with variable size
+	std::vector<size_t>& IDFT(std::vector<size_t>&, std::vector<size_t>&, size_t, size_t); // binary architecture a with variable size
 
 	std::vector<size_t>& fast_poly_multiplication(std::vector<size_t>&, std::vector<size_t>&, std::vector<size_t>&);
 	std::vector<size_t>& fast_poly_division(std::vector<size_t>&, std::vector<size_t>&, std::vector<size_t>&, std::vector<size_t>&);
@@ -53,6 +56,9 @@ struct galois_field
 
 private:
 	void init();
+
+	std::vector<size_t>& DFTimpl(std::vector<size_t>&, std::vector<size_t>&, size_t, size_t, size_t, size_t); // binary architecture a with variable size
+	std::vector<size_t>& IDFTimpl(std::vector<size_t>&, std::vector<size_t>&, size_t, size_t, size_t, size_t); // binary architecture a with variable size
 
 	std::vector<size_t> inverse_add_init(std::vector<size_t> const&) const;
 	std::vector<size_t> add_init(std::vector<size_t> const&, std::vector<size_t> const&) const;
@@ -82,6 +88,8 @@ private:
 	std::array<std::vector<size_t>, 3> _ad_tmp_polinomyals;
 
 	std::array<std::vector<size_t>, 12> _solve_toeplitz_tmp;
+
+	std::vector<std::array<std::vector<size_t>, 4>> _dft_tmp;
 
 	std::vector<size_t> _ad_x;
 	std::vector<size_t> _ad_y;

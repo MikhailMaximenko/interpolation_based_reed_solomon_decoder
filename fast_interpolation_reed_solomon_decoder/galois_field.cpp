@@ -136,12 +136,12 @@ size_t galois_field::divide(size_t a, size_t b) const {
 }
 
 std::vector<size_t>& galois_field::fast_poly_multiplication(std::vector<size_t>& a, std::vector<size_t>& b, std::vector<size_t>& dst) {
-	DFT(a, _a_tmp, _exp_table[1]);
-	DFT(b, _b_tmp, _exp_table[1]);
-	for (size_t i = 0; i < a.size(); ++i) {
-		_a_tmp[i] = multiply(_a_tmp[i], _b_tmp[i]);
-	}
-	IDFT(_a_tmp, dst, inverse(_exp_table[1]));
+	//DFT(a, _a_tmp, _exp_table[1]);
+	//DFT(b, _b_tmp, _exp_table[1]);
+	//for (size_t i = 0; i < a.size(); ++i) {
+	//	_a_tmp[i] = multiply(_a_tmp[i], _b_tmp[i]);
+	//}
+	//IDFT(_a_tmp, dst, inverse(_exp_table[1]));
 	return dst;
 }
 
@@ -323,18 +323,50 @@ std::vector<size_t>& galois_field::SOLVE_TOEPITZ(std::vector<size_t>& a, std::ve
 }
 
 
-std::vector<size_t>& galois_field::DFT(std::vector<size_t>& src, std::vector<size_t>& dst, size_t gen_elem) {
+std::vector<size_t>& galois_field::DFT(std::vector<size_t>& src, std::vector<size_t>& dst) {
 	// call fft
 	return dst;
 }
 
-std::vector<size_t>& galois_field::IDFT(std::vector<size_t>& src, std::vector<size_t>& dst, size_t gen_elem) {
-	DFT(src, dst, gen_elem);
+std::vector<size_t>& galois_field::IDFT(std::vector<size_t>& src, std::vector<size_t>& dst) {
+	DFT(src, dst);
 	for (size_t i = 0; i < dst.size(); ++i) {
 		dst[i] = multiply(dst[i], _inverse_element);
 	}
 	return dst;
 }
+
+std::vector<size_t>& galois_field::DFT(std::vector<size_t>& src, std::vector<size_t>& dst, size_t size, size_t bias) {
+		
+	return dst;
+}
+
+std::vector<size_t>& galois_field::IDFT(std::vector<size_t>& src, std::vector<size_t>& dst, size_t size, size_t bias) {
+	return dst;
+}
+
+// basis transform perform is needed, we assume src is already in the correct basis
+// such dft allows to decrease overall decoding complexity to nlog(n)log(log(n)) for binary galois field (non-fft-friendly field case)
+std::vector<size_t>& galois_field::DFTimpl(std::vector<size_t>& src, std::vector<size_t>& dst, size_t size, size_t bias, size_t i, size_t r) {
+	size_t k = 8 * sizeof(size_t) - std::countl_zero<size_t>(size);
+	if (i == k) {
+		dst[0] = 1; // !!
+		return dst;
+	}
+	// prepare _dft_tmp[i][2] and _dft_tmp[i][3]
+
+	// call dfts
+	DFTimpl(_dft_tmp[i][2], _dft_tmp[i][0], size / 2, bias, i + 1, r);
+	DFTimpl(_dft_tmp[i][3], _dft_tmp[i][1], size / 2, bias, i + 1, r + (1 << i));
+
+	// count answer
+	for (size_t j = 0; j < (1 << (k - i - 1)); ++j) {
+
+	}
+} // binary architecture a with variable size
+std::vector<size_t>& galois_field::IDFTimpl(std::vector<size_t>&, std::vector<size_t>&, size_t size, size_t bias, size_t i, size_t r) {
+
+} // binary architecture a with variable size
 
 void galois_field::split_poly(std::vector<size_t> const& p, std::vector<size_t>& dst1, std::vector<size_t>& dst2, size_t m) {
 	for (size_t i = 0; i < p.size(); ++i) {
