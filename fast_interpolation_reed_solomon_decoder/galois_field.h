@@ -7,92 +7,93 @@
 struct galois_field
 {
 	// original field size
-	size_t _p;
+	//unsigned _p;
 
 	// power of extension
-	size_t _m;
+	unsigned _m;
 
 	// extention field size
-	size_t _q; 
+	unsigned _q; 
 	
 	// multiplicative group size
-	size_t _n; 
+	unsigned _n; 
 
-	std::vector<size_t> _generating_poly;
+	unsigned _gen_poly;
+	unsigned _poly_size;
+	std::vector<unsigned> _exp_table;
+	std::vector<unsigned> _log_table;
 
-	std::vector<size_t> _log_table;
-	std::vector<size_t> _exp_table;
-	size_t _minus_one;
-	size_t _inverse_element; // n^(-1) (n from idft)
+	unsigned _inverse_element; // n^(-1) (n from idft)
 
 	// if _n is not power of 2 need to store another field over which dft/idft will be applied
 
-	galois_field(size_t, size_t, std::vector<size_t> const&);
+	galois_field(unsigned, unsigned, unsigned);
 
-	size_t multiply(size_t, size_t) const;
-	size_t add(size_t, size_t) const;
-	size_t sub(size_t, size_t) const;
-	size_t divide(size_t, size_t) const;
-	size_t inverse(size_t) const;
+	unsigned multiply(unsigned, unsigned) const;
+	unsigned add(unsigned, unsigned) const;
+	unsigned divide(unsigned, unsigned) const;
+	unsigned inverse(unsigned) const;
 
-	std::vector<size_t>& DFT(std::vector<size_t>&, std::vector<size_t>&); // cyclotomic
-	std::vector<size_t>& IDFT(std::vector<size_t>&, std::vector<size_t>&); // cyclotomic
+	std::vector<unsigned>& DFT(std::vector<unsigned>&, std::vector<unsigned>&); // cyclotomic
+	std::vector<unsigned>& IDFT(std::vector<unsigned>&, std::vector<unsigned>&); // cyclotomic
 
-	std::vector<size_t>& DFT(std::vector<size_t>&, std::vector<size_t>&, size_t, size_t); // binary architecture a with variable size
-	std::vector<size_t>& IDFT(std::vector<size_t>&, std::vector<size_t>&, size_t, size_t); // binary architecture a with variable size
+	std::vector<unsigned>& DFT(std::vector<unsigned>&, std::vector<unsigned>&, unsigned, unsigned); // binary architecture a with variable size
+	std::vector<unsigned>& IDFT(std::vector<unsigned>&, std::vector<unsigned>&, unsigned, unsigned); // binary architecture a with variable size
 
-	std::vector<size_t>& fast_poly_multiplication(std::vector<size_t>&, std::vector<size_t>&, std::vector<size_t>&);
-	std::vector<size_t>& fast_poly_division(std::vector<size_t>&, std::vector<size_t>&, std::vector<size_t>&, std::vector<size_t>&);
-	std::array<std::pair<std::vector<size_t>, std::vector<size_t>>, 3>& 
-		EMGCD(std::vector<size_t> const&, std::vector<size_t> const&, std::array<std::pair<std::vector<size_t>, std::vector<size_t>>, 3>&, size_t);
-	void AD(std::vector<size_t>&, size_t, std::vector<size_t>&, std::vector<size_t>&);
+	std::vector<unsigned>& fast_poly_multiplication(std::vector<unsigned>&, std::vector<unsigned>&, std::vector<unsigned>&);
+	std::vector<unsigned>& fast_poly_division(std::vector<unsigned>&, std::vector<unsigned>&, std::vector<unsigned>&, std::vector<unsigned>&);
+	std::array<std::pair<std::vector<unsigned>, std::vector<unsigned>>, 3>& 
+		EMGCD(std::vector<unsigned> const&, std::vector<unsigned> const&, std::array<std::pair<std::vector<unsigned>, std::vector<unsigned>>, 3>&, unsigned);
+	void AD(std::vector<unsigned>&, unsigned, std::vector<unsigned>&, std::vector<unsigned>&);
 
-	std::vector<size_t>& SOLVE_TOEPITZ(std::vector<size_t>&, std::vector<size_t>&, size_t, std::vector<size_t>&);
+	std::vector<unsigned>& SOLVE_TOEPITZ(std::vector<unsigned>&, std::vector<unsigned>&, unsigned, std::vector<unsigned>&);
 
-	size_t degree(std::vector<size_t> const&);
-	std::vector<size_t>& rev_poly(std::vector<size_t>&, std::vector<size_t>&, size_t);
-	std::vector<size_t>& add_poly(std::vector<size_t>&, std::vector<size_t>&, std::vector<size_t>&, size_t);
-	std::vector<size_t>& sub_poly(std::vector<size_t>&, std::vector<size_t>&, std::vector<size_t>&);
+	unsigned degree(std::vector<unsigned> const&);
+	std::vector<unsigned>& rev_poly(std::vector<unsigned>&, std::vector<unsigned>&, unsigned);
+	std::vector<unsigned>& add_poly(std::vector<unsigned>&, std::vector<unsigned>&, std::vector<unsigned>&, unsigned);
+	std::vector<unsigned>& sub_poly(std::vector<unsigned>&, std::vector<unsigned>&, std::vector<unsigned>&);
 
 private:
 	void init();
 
-	std::vector<size_t>& DFTimpl(std::vector<size_t>&, std::vector<size_t>&, size_t, size_t, size_t, size_t); // binary architecture a with variable size
-	std::vector<size_t>& IDFTimpl(std::vector<size_t>&, std::vector<size_t>&, size_t, size_t, size_t, size_t); // binary architecture a with variable size
+	std::vector<unsigned>& DFTimpl(std::vector<unsigned>&, std::vector<unsigned>&, unsigned, unsigned, unsigned); // binary architecture a with variable size
+	std::vector<unsigned>& IDFTimpl(std::vector<unsigned>&, std::vector<unsigned>&, unsigned, unsigned, unsigned); // binary architecture a with variable size
 
-	std::vector<size_t> inverse_add_init(std::vector<size_t> const&) const;
-	std::vector<size_t> add_init(std::vector<size_t> const&, std::vector<size_t> const&) const;
-	std::vector<size_t> multiply_by_const_init(std::vector<size_t> const&, size_t) const;
+	//std::vector<unsigned> inverse_add_init(std::vector<unsigned> const&) const;
+	//std::vector<unsigned> add_init(std::vector<unsigned> const&, std::vector<unsigned> const&) const;
+	//std::vector<unsigned> multiply_by_const_init(std::vector<unsigned> const&, unsigned) const;
 
-	size_t poly_to_num(std::vector<size_t> const&) const;
-	std::vector<size_t>& shift_poly(std::vector<size_t>&) const;
+	unsigned poly_to_num(std::vector<unsigned> const&) const;
+	std::vector<unsigned>& shift_poly(std::vector<unsigned>&) const;
 
 
-	void split_poly(std::vector<size_t> const&, std::vector<size_t>&, std::vector<size_t>&, size_t);
+	void split_poly(std::vector<unsigned> const&, std::vector<unsigned>&, std::vector<unsigned>&, unsigned);
 
-	std::vector<size_t>& multipy_poly_by_const(std::vector<size_t>&, size_t);
+	std::vector<unsigned>& multipy_poly_by_const(std::vector<unsigned>&, unsigned);
 	
 
-	std::vector<size_t>& remainder_of_power(std::vector<size_t>&, size_t);
-	std::vector<size_t> inv_poly(std::vector<size_t>&, std::vector<size_t>&, size_t);
+	std::vector<unsigned>& remainder_of_power(std::vector<unsigned>&, unsigned);
+	std::vector<unsigned> inv_poly(std::vector<unsigned>&, std::vector<unsigned>&, unsigned);
 
-private:
-	std::vector<size_t> _a_tmp;
-	std::vector<size_t> _b_tmp;
-	std::vector<size_t> _inverse_temporary1;
-	std::vector<size_t> _inverse_temporary2;
-	std::vector<std::array<std::pair<std::vector<size_t>, std::vector<size_t>>, 3>> _emgcd_tmp_result;
-	std::vector<std::array<std::vector<size_t>, 8>> _emgcd_tmp_polynomials;
+public:
+	std::vector<unsigned> _a_tmp;
+	std::vector<unsigned> _b_tmp;
+	std::vector<unsigned> _inverse_temporary1;
+	std::vector<unsigned> _inverse_temporary2;
+	std::vector<std::array<std::pair<std::vector<unsigned>, std::vector<unsigned>>, 3>> _emgcd_tmp_result;
+	std::vector<std::array<std::vector<unsigned>, 8>> _emgcd_tmp_polynomials;
 
-	std::array<std::array<std::pair<std::vector<size_t>, std::vector<size_t>>, 3>, 2> _ad_tmp_emgcd_results;
-	std::array<std::vector<size_t>, 3> _ad_tmp_polinomyals;
+	std::array<std::array<std::pair<std::vector<unsigned>, std::vector<unsigned>>, 3>, 2> _ad_tmp_emgcd_results;
+	std::array<std::vector<unsigned>, 3> _ad_tmp_polinomyals;
 
-	std::array<std::vector<size_t>, 12> _solve_toeplitz_tmp;
+	std::array<std::vector<unsigned>, 12> _solve_toeplitz_tmp;
 
-	std::vector<std::array<std::vector<size_t>, 4>> _dft_tmp;
+	std::vector<std::array<std::vector<unsigned>, 4>> _dft_tmp;
 
-	std::vector<size_t> _ad_x;
-	std::vector<size_t> _ad_y;
-	std::vector<size_t> _b_rev;
+	std::vector<std::vector<unsigned>> _s;
+
+	std::vector<unsigned> _ad_x;
+	std::vector<unsigned> _ad_y;
+	std::vector<unsigned> _b_rev;
 
 };

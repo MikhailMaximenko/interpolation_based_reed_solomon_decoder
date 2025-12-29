@@ -1,7 +1,7 @@
 //Fedorenko-Trifonov's Direct FFT for GF(2^3) and primitive polynomial 0xb
 #define MULTIPLY(A,B,C){if (!A||!B) C=0;else {int Log=LogTable[A]+LogTable[B];if (Log>=(FIELDSIZE-1))Log-=(FIELDSIZE-1);C=GF[1+Log];};};
 typedef unsigned GFValue;
-extern const unsigned EXTENSION=3;
+const unsigned EXTENSION=3;
 #define FIELDSIZE (1u<<EXTENSION)
 GFValue GF[8]={0,1,2,4,3,6,7,5};
 int LogTable[8]={-1,0,1,3,2,6,4,5};
@@ -11,7 +11,7 @@ int LogTable[8]={-1,0,1,3,2,6,4,5};
 */
 
 
-void FFT(GFValue* pSource,GFValue* pDest){
+void FFT7(GFValue* pSource,GFValue* pDest){
 GFValue Products[4];
 GFValue LinearizedValues[7];
 LinearizedValues[0]=pSource[0];

@@ -1,4 +1,5 @@
 #include "galois_field.h"
+#include "fft.h"
 #include <cmath>
 #include <cstddef>
 #include <stdexcept>
@@ -8,15 +9,15 @@
 
 #include <iostream>
 
-galois_field::galois_field(size_t p, size_t m, std::vector<size_t> const& gen) 
-	: _p(p)
-	, _m(m)
-	, _q(std::pow(p, m))
+galois_field::galois_field(unsigned m, unsigned gen_poly, unsigned poly_size)
+	: _m(m)
+	, _q(1 << _m)
 	, _n(_q - 1)
-	, _generating_poly(gen)
-	, _log_table(_q) 
+	, _gen_poly(gen_poly)
+	, _poly_size(poly_size)
+	, _log_table(_q)
 	, _exp_table(_q)
-	, _minus_one(_p - 1)
+	, _inverse_element(_n)
 	, _a_tmp(_n)
 	, _b_tmp(_n)
 {
@@ -24,54 +25,86 @@ galois_field::galois_field(size_t p, size_t m, std::vector<size_t> const& gen)
 }
 
 void galois_field::init() {
-	std::vector<size_t> x(_m + 1);
-	x[0] = 1;
-	for (size_t i = 0; i < _q; ++i) {
-		_exp_table[i] = poly_to_num(x);
-		_log_table[poly_to_num(x)] = i;
-		shift_poly(x);
-		if (x.back()) {
-			x = add_init(x, inverse_add_init(multiply_by_const_init(_generating_poly, x.back())));
+	unsigned x = 1;
+	_exp_table[_n] = 1;
+	//_log_table[0] = 0;
+	for (int i = 0; i < _n; i++) {
+		_exp_table[i] = x;
+		_log_table[x] = i;
+
+		// Multiply by generator (x)
+		x <<= 1;
+		x = x ^ ((x & (1 << _poly_size)) ? _gen_poly : 0);
+	}
+
+	// evaluate s
+	// recurrent way of evaluation may be easier
+	_s.resize(_m);
+
+	for (size_t level = 1; level < _m; ++level) {
+		_s[level].resize(_q);
+		for (size_t i = 0; i < _q; ++i) {
+			_s[level][i] = 1;
+			for (size_t k = 0; k < (1 << level); ++k) {
+				_s[level][i] = multiply(_s[level][i], add(k, i));
+			}
 		}
 	}
-	_exp_table[_n] = _exp_table[0];
+	std::cout << "s:\n";
+	for (size_t level = 1; level < _m; ++level) {
+		std::cout << level << ": ";
+		unsigned inv= inverse(_s[level][1 << level]);
+		for (size_t i = 0; i < _q; ++i) {
+			_s[level][i] = multiply(_s[level][i], inv);
+			std::cout << _s[level][i] << " ";
+		}
+		std::cout << "\n";
+	}
+
+	_dft_tmp.resize(_m + 1);
+	for (auto& a : _dft_tmp) {
+		for (auto& v : a) {
+			v.resize(_q);
+		}
+	}
+	std::cout << "initted\n";
 }
 
-std::vector<size_t> galois_field::inverse_add_init(std::vector<size_t> const& v) const {
-	std::vector<size_t> res;
-	for (size_t i = 0; i < v.size(); ++i) {
-		res.emplace_back((_p - v[i]) % _p);
-	}
-	return  res;
-}
+//std::vector<unsigned> galois_field::inverse_add_init(std::vector<unsigned> const& v) const {
+//	std::vector<unsigned> res;
+//	for (unsigned i = 0; i < v.size(); ++i) {
+//		res.emplace_back((_p - v[i]) % _p);
+//	}
+//	return  res;
+//}
 
-std::vector<size_t> galois_field::add_init(std::vector<size_t> const& a, std::vector<size_t> const& b) const {
-	std::vector<size_t> res;
-	size_t i = 0;
-	while (i < a.size() && i < b.size()) {
-		res.emplace_back((a[i] + b[i]) % _p);
-		++i;
-	}
-	while (i < a.size()) {
-		res.emplace_back(a[i]);
-		++i;
-	}
-	while (i < b.size()) {
-		res.emplace_back(b[i]);
-		++i;
-	}
-	return res;
-}
+//std::vector<unsigned> galois_field::add_init(std::vector<unsigned> const& a, std::vector<unsigned> const& b) const {
+//	std::vector<unsigned> res;
+//	unsigned i = 0;
+//	while (i < a.size() && i < b.size()) {
+//		res.emplace_back((a[i] + b[i]) % _p);
+//		++i;
+//	}
+//	while (i < a.size()) {
+//		res.emplace_back(a[i]);
+//		++i;
+//	}
+//	while (i < b.size()) {
+//		res.emplace_back(b[i]);
+//		++i;
+//	}
+//	return res;
+//}
 
-std::vector<size_t> galois_field::multiply_by_const_init(std::vector<size_t> const& a, size_t b) const {
-	std::vector<size_t> res;
-	for (size_t i : a) {
-		res.push_back(i * b % _p);
-	}
-	return res;
-}
+//std::vector<unsigned> galois_field::multiply_by_const_init(std::vector<unsigned> const& a, unsigned b) const {
+//	std::vector<unsigned> res;
+//	for (unsigned i : a) {
+//		res.push_back(i * b % _p);
+//	}
+//	return res;
+//}
 
-size_t galois_field::degree(std::vector<size_t> const& a) {
+unsigned galois_field::degree(std::vector<unsigned> const& a) {
 	for (ptrdiff_t deg = a.size() - 1; deg >= 0; --deg) {
 		if (a[deg] != 0) {
 			return deg;
@@ -80,16 +113,16 @@ size_t galois_field::degree(std::vector<size_t> const& a) {
 	return 0;
 }
 
-size_t galois_field::poly_to_num(std::vector<size_t> const& a) const {
-	size_t res = 0;
+unsigned galois_field::poly_to_num(std::vector<unsigned> const& a) const {
+	unsigned res = 0;
 	for (ptrdiff_t i = a.size() - 1; i >= 0; --i) {
-		res *= _p;
+		res *= 2;
 		res += a[i];
 	}
 	return res;
 }
 
-std::vector<size_t>& galois_field::shift_poly(std::vector<size_t>& a) const {
+std::vector<unsigned>& galois_field::shift_poly(std::vector<unsigned>& a) const {
 	for (ptrdiff_t i = a.size() - 1; i >= 1; --i) {
 		a[i] = a[i - 1];
 	}
@@ -97,64 +130,73 @@ std::vector<size_t>& galois_field::shift_poly(std::vector<size_t>& a) const {
 	return a;
 }
 
-size_t galois_field::add(size_t a, size_t b) const { 
-	if (a == 0) return b;
-	if (b == 0) return a;
-	size_t m, n;
-	m = _log_table[a];
-	n = _log_table[b];
-	std::cout << m << " " << n << "\n";
-	if (m <= n) {
-		n = _log_table[_exp_table[n - m] + 1];
-		size_t log_sum = (m + n) % _n;
-		return _exp_table[log_sum];
-	}
-	else {
-		std::cout << _exp_table[m - n] << " " << _log_table[_exp_table[m - n] + 1] << "\n";
-		m = _log_table[_exp_table[m - n] + 1];
-		size_t log_sum = (m + n) % _n;
-		return _exp_table[log_sum];
-	}
-}
-size_t galois_field::sub(size_t a, size_t b) const { 
-	return add(a, multiply(b, _minus_one)); 
+unsigned galois_field::add(unsigned a, unsigned b) const { 
+	return a ^ b;
 }
 
-size_t galois_field::multiply(size_t a, size_t b) const { 
+unsigned galois_field::multiply(unsigned a, unsigned b) const { 
 	if (a == 0 || b == 0) {
 		return 0;
 	}
-	size_t log_sum = (_log_table[a] + _log_table[b]) % _n;
+	unsigned log_sum = (_log_table[a] + _log_table[b]) % _n;
 	return _exp_table[log_sum]; 
 }
-size_t galois_field::inverse(size_t a) const {
+unsigned galois_field::inverse(unsigned a) const {
 	if (a == 0) throw std::runtime_error("division by zero");
     return _exp_table[_n - _log_table[a]];
 }
-size_t galois_field::divide(size_t a, size_t b) const { 
+unsigned galois_field::divide(unsigned a, unsigned b) const { 
 	return multiply(a, inverse(b)); 
 }
 
-std::vector<size_t>& galois_field::fast_poly_multiplication(std::vector<size_t>& a, std::vector<size_t>& b, std::vector<size_t>& dst) {
-	//DFT(a, _a_tmp, _exp_table[1]);
-	//DFT(b, _b_tmp, _exp_table[1]);
-	//for (size_t i = 0; i < a.size(); ++i) {
-	//	_a_tmp[i] = multiply(_a_tmp[i], _b_tmp[i]);
-	//}
-	//IDFT(_a_tmp, dst, inverse(_exp_table[1]));
+std::vector<unsigned>& galois_field::fast_poly_multiplication(std::vector<unsigned>& a, std::vector<unsigned>& b, std::vector<unsigned>& dst) {
+	call_fft(a, _a_tmp);
+	call_fft(b, _b_tmp);
+	std::cout << "\n";
+	for (unsigned* i = a.data(); i < a.data() + a.size(); ++i) {
+		std::cout << *i << " ";
+	}
+	std::cout << "\n";
+	for (unsigned* i = b.data(); i < b.data() + b.size(); ++i) {
+		std::cout << *i << " ";
+	}
+	std::cout << "\n";
+
+	std::cout << "ffts\n";
+	for (auto i : _a_tmp) {
+		std::cout << i << " ";
+	}
+	std::cout << "\n";
+	for (unsigned* i = _b_tmp.data(); i < _b_tmp.data() + _b_tmp.size(); ++i) {
+		std::cout << *i << " ";
+	}
+	std::cout << "\n";
+
+	for (unsigned i = 0; i < a.size(); ++i) {
+		_a_tmp[i] = multiply(_a_tmp[i], _b_tmp[i]);
+	}
+	std::cout << "mult: ";
+	for (auto i : _a_tmp) {
+		std::cout << i << " ";
+	}
+	std::cout << "\n";
+	call_fft(_a_tmp, dst);
+	std::reverse(dst.begin() + 1, dst.end());
+	//multipy_poly_by_const(dst, _inverse_element);
+
 	return dst;
 }
 
-std::vector<size_t>& galois_field::fast_poly_division(std::vector<size_t>& a, std::vector<size_t>& b, std::vector<size_t>& quotient, std::vector<size_t>& remainder) {
+std::vector<unsigned>& galois_field::fast_poly_division(std::vector<unsigned>& a, std::vector<unsigned>& b, std::vector<unsigned>& quotient, std::vector<unsigned>& remainder) {
 	if (a.size() < b.size()) {
 		return a;
 	}
 	//return rev_poly();
 }
 
-std::array<std::pair<std::vector<size_t>, std::vector<size_t>>, 3>& 
-		galois_field::EMGCD(std::vector<size_t> const& u0, std::vector<size_t> const& u1, std::array<std::pair<std::vector<size_t>, std::vector<size_t>>, 3>& dst, size_t tmp_num) {
-	size_t n = degree(u0);
+std::array<std::pair<std::vector<unsigned>, std::vector<unsigned>>, 3>& 
+		galois_field::EMGCD(std::vector<unsigned> const& u0, std::vector<unsigned> const& u1, std::array<std::pair<std::vector<unsigned>, std::vector<unsigned>>, 3>& dst, unsigned tmp_num) {
+	unsigned n = degree(u0);
 
 	if (degree(u1) < n / 2) {
 		dst[0].first = u0;
@@ -164,12 +206,12 @@ std::array<std::pair<std::vector<size_t>, std::vector<size_t>>, 3>&
 		return dst;
 	}
 	auto& locals = _emgcd_tmp_polynomials[tmp_num];
-	std::array<std::pair<std::vector<size_t>, std::vector<size_t>>, 3>& result = _emgcd_tmp_result[tmp_num];
-	//std::vector<size_t> b0, b1, c0, c1;
+	std::array<std::pair<std::vector<unsigned>, std::vector<unsigned>>, 3>& result = _emgcd_tmp_result[tmp_num];
+	//std::vector<unsigned> b0, b1, c0, c1;
 	// tmp layout:
 	// b0   b1   c0   c1   d    e    q    f    
 	// 0    1    2    3    4    5    6    7  
-	size_t m = n / 2 + n % 2;
+	unsigned m = n / 2 + n % 2;
 
 	split_poly(u0,locals[0], locals[2], m);
 	split_poly(u1, locals[1], locals[3], m);
@@ -178,7 +220,7 @@ std::array<std::pair<std::vector<size_t>, std::vector<size_t>>, 3>&
 	EMGCD(locals[0], locals[1], _emgcd_tmp_result[tmp_num], tmp_num + 1);
 
 	using std::swap;
-	//std::vector<size_t> d,e;
+	//std::vector<unsigned> d,e;
 	//
 	
 	// b0, b1 wont be used further
@@ -197,7 +239,7 @@ std::array<std::pair<std::vector<size_t>, std::vector<size_t>>, 3>&
 
 	add_poly(locals[0], result[0].second, locals[5], m); // e
 
-	size_t deg_e = degree(locals[5]);
+	unsigned deg_e = degree(locals[5]);
 	if (deg_e < n / 2) {
 		dst[0].first = std::move(locals[4]);
 		dst[0].second = std::move(locals[5]);
@@ -214,12 +256,12 @@ std::array<std::pair<std::vector<size_t>, std::vector<size_t>>, 3>&
 	// g0   g1   h0   h1   d    e    q    f    
 	// 0    1    2    3    4    5    6    7  
 	fast_poly_division(locals[4], locals[5], locals[6], locals[7]);
-	size_t k = 2 * m - deg_e;
+	unsigned k = 2 * m - deg_e;
 	split_poly(locals[5], locals[0], locals[2], k);
 	split_poly(locals[7], locals[1], locals[3], k);
 	EMGCD(locals[0], locals[1], _emgcd_tmp_result[tmp_num + 1], tmp_num + 1); // need to be careful with such storage
 
-	std::array<std::pair<std::vector<size_t>, std::vector<size_t>>, 3>& result2 = _emgcd_tmp_result[tmp_num + 1];
+	std::array<std::pair<std::vector<unsigned>, std::vector<unsigned>>, 3>& result2 = _emgcd_tmp_result[tmp_num + 1];
 	
 	// g0, g1 wont be used further
 	
@@ -242,11 +284,11 @@ std::array<std::pair<std::vector<size_t>, std::vector<size_t>>, 3>&
 
 	// multiply matrices (can be optimized)
 	fast_poly_multiplication(result[2].first, locals[6], locals[0]);
-	multipy_poly_by_const(locals[0], _p - 1);
+	//multipy_poly_by_const(locals[0], _p - 1);
 	add_poly(result[1].first, locals[0], locals[1], 0);
 
 	fast_poly_multiplication(result[2].second, locals[6], locals[0]);
-	multipy_poly_by_const(locals[0], _p - 1);
+	//multipy_poly_by_const(locals[0], _p - 1);
 	add_poly(result[1].second, locals[0], locals[2], 0);
 
 	fast_poly_multiplication(result[2].first, result2[1].first, locals[0]);
@@ -273,7 +315,7 @@ std::array<std::pair<std::vector<size_t>, std::vector<size_t>>, 3>&
 	return dst;
 }
 
-void galois_field::AD(std::vector<size_t>& a, size_t n, std::vector<size_t>& dst1, std::vector<size_t>& dst2) {
+void galois_field::AD(std::vector<unsigned>& a, unsigned n, std::vector<unsigned>& dst1, std::vector<unsigned>& dst2) {
 	_ad_tmp_polinomyals[0][2 * n + 1] = 1;
 	_ad_tmp_polinomyals[1] = a;
 	EMGCD(_ad_tmp_polinomyals[0], _ad_tmp_polinomyals[1], _ad_tmp_emgcd_results[0], 0);
@@ -302,7 +344,7 @@ void galois_field::AD(std::vector<size_t>& a, size_t n, std::vector<size_t>& dst
 		return;
 	}
 
-	_ad_tmp_polinomyals[1][2 * n + 2] = _p - 1;
+	_ad_tmp_polinomyals[1][2 * n + 2] = 1;
 	EMGCD(_ad_tmp_polinomyals[0], _ad_tmp_polinomyals[1], _ad_tmp_emgcd_results[0], 0);
 	rev_poly(_ad_tmp_polinomyals[1], _ad_tmp_polinomyals[2], 2 * n + 2);
 	EMGCD(_ad_tmp_polinomyals[0], _ad_tmp_polinomyals[2], _ad_tmp_emgcd_results[2], 0);
@@ -310,7 +352,7 @@ void galois_field::AD(std::vector<size_t>& a, size_t n, std::vector<size_t>& dst
 	dst2 = multipy_poly_by_const(_ad_tmp_emgcd_results[1][3].second, inverse(_ad_tmp_emgcd_results[1][0].second[degree(_ad_tmp_emgcd_results[1][0].second)]));
 }
 
-std::vector<size_t>& galois_field::SOLVE_TOEPITZ(std::vector<size_t>& a, std::vector<size_t>& b, size_t n, std::vector<size_t>& dst) {
+std::vector<unsigned>& galois_field::SOLVE_TOEPITZ(std::vector<unsigned>& a, std::vector<unsigned>& b, unsigned n, std::vector<unsigned>& dst) {
 	AD(a, n, _ad_x, _ad_y);
 	assert(_ad_x[0] != 0);
 	rev_poly(b, _solve_toeplitz_tmp[0], n);
@@ -323,53 +365,92 @@ std::vector<size_t>& galois_field::SOLVE_TOEPITZ(std::vector<size_t>& a, std::ve
 }
 
 
-std::vector<size_t>& galois_field::DFT(std::vector<size_t>& src, std::vector<size_t>& dst) {
+std::vector<unsigned>& galois_field::DFT(std::vector<unsigned>& src, std::vector<unsigned>& dst) {
 	// call fft
 	return dst;
 }
 
-std::vector<size_t>& galois_field::IDFT(std::vector<size_t>& src, std::vector<size_t>& dst) {
+std::vector<unsigned>& galois_field::IDFT(std::vector<unsigned>& src, std::vector<unsigned>& dst) {
 	DFT(src, dst);
-	for (size_t i = 0; i < dst.size(); ++i) {
+	for (unsigned i = 0; i < dst.size(); ++i) {
 		dst[i] = multiply(dst[i], _inverse_element);
 	}
 	return dst;
 }
 
-std::vector<size_t>& galois_field::DFT(std::vector<size_t>& src, std::vector<size_t>& dst, size_t size, size_t bias) {
-		
+std::vector<unsigned>& galois_field::DFT(std::vector<unsigned>& src, std::vector<unsigned>& dst, unsigned size, unsigned bias) {
+	DFTimpl(src, dst, size, 0, 0);
 	return dst;
 }
 
-std::vector<size_t>& galois_field::IDFT(std::vector<size_t>& src, std::vector<size_t>& dst, size_t size, size_t bias) {
+std::vector<unsigned>& galois_field::IDFT(std::vector<unsigned>& src, std::vector<unsigned>& dst, unsigned size, unsigned bias) {
+	IDFTimpl(src, dst, size, 0, 0);
 	return dst;
 }
 
 // basis transform perform is needed, we assume src is already in the correct basis
 // such dft allows to decrease overall decoding complexity to nlog(n)log(log(n)) for binary galois field (non-fft-friendly field case)
-std::vector<size_t>& galois_field::DFTimpl(std::vector<size_t>& src, std::vector<size_t>& dst, size_t size, size_t bias, size_t i, size_t r) {
-	size_t k = 8 * sizeof(size_t) - std::countl_zero<size_t>(size);
+std::vector<unsigned>& galois_field::DFTimpl(std::vector<unsigned>& src, std::vector<unsigned>& dst, unsigned size, unsigned i, unsigned r) {
+	unsigned k = 8 * sizeof(unsigned) - std::countl_zero<unsigned>(size) - 1;
+	std::cout << k << "\n";
 	if (i == k) {
-		dst[0] = 1; // !!
+		dst[0] = src[r]; // !!
 		return dst;
 	}
 	// prepare _dft_tmp[i][2] and _dft_tmp[i][3]
 
 	// call dfts
-	DFTimpl(_dft_tmp[i][2], _dft_tmp[i][0], size / 2, bias, i + 1, r);
-	DFTimpl(_dft_tmp[i][3], _dft_tmp[i][1], size / 2, bias, i + 1, r + (1 << i));
-
-	// count answer
-	for (size_t j = 0; j < (1 << (k - i - 1)); ++j) {
-
+	DFTimpl(src, _dft_tmp[i][0], size / 2, i + 1, r);
+	DFTimpl(src, _dft_tmp[i][1], size / 2, i + 1, r + (1 << i));
+	std::cout << "dfts: \n";
+	for (auto v : _dft_tmp[i][0]) {
+		std::cout << v << " ";
 	}
+	std::cout << "\n";
+	for (auto v : _dft_tmp[i][1]) {
+		std::cout << v << " ";
+	}
+	std::cout << "\n";
+	// count answer
+	for (unsigned j = 0; j < (1 << (k - i - 1)); ++j) {
+		unsigned pos = j * (1 << (i + 1));
+		//std::cout << i << " " << pos << " " << (1 << i) << "\n";
+		//std::cout << _dft_tmp[i][0][pos] << " " << _dft_tmp[i][1][pos] << "\n";
+		//std::cout << _s[i + 1][pos] << "\n";
+		dst[pos] = add(_dft_tmp[i][0][pos], multiply(_s[i + 1][pos], _dft_tmp[i][1][pos]));
+		dst[pos + (1 << i)] = add(dst[pos], _dft_tmp[i][1][pos]);
+	}
+	std::cout << "here" << std::endl;
+	return dst;
 } // binary architecture a with variable size
-std::vector<size_t>& galois_field::IDFTimpl(std::vector<size_t>&, std::vector<size_t>&, size_t size, size_t bias, size_t i, size_t r) {
 
+
+std::vector<unsigned>& galois_field::IDFTimpl(std::vector<unsigned>& src, std::vector<unsigned>& dst, unsigned size, unsigned i, unsigned r) {
+	unsigned k = 8 * sizeof(unsigned) - std::countl_zero<unsigned>(size) - 1;
+	if (i == k) {
+		dst[0] = src[r]; // !!
+		return dst;
+	}
+
+	for (unsigned j = 0; j < (1 << (k - i - 1)); ++j) {
+		unsigned pos = j * (1 << (i + 1));
+		_dft_tmp[i][2][pos] = add(src[pos], src[pos + (1 << i)]);
+		_dft_tmp[i][3][pos] = add(src[pos], multiply(_s[i + 1][pos], _dft_tmp[i][2][pos]));
+	}
+
+	IDFTimpl(_dft_tmp[i][2], _dft_tmp[i][0], size / 2, i + 1, r);
+	IDFTimpl(_dft_tmp[i][3], _dft_tmp[i][1], size / 2, i + 1, r + (1 << i));
+	// count an answer
+	// ... 
+	for (size_t j = 0; j < (1 << k); ++j) {
+		dst[j] = _dft_tmp[i][0][j];
+		dst[j + 1] = _dft_tmp[i][1][j];
+	}
+	return dst;
 } // binary architecture a with variable size
 
-void galois_field::split_poly(std::vector<size_t> const& p, std::vector<size_t>& dst1, std::vector<size_t>& dst2, size_t m) {
-	for (size_t i = 0; i < p.size(); ++i) {
+void galois_field::split_poly(std::vector<unsigned> const& p, std::vector<unsigned>& dst1, std::vector<unsigned>& dst2, unsigned m) {
+	for (unsigned i = 0; i < p.size(); ++i) {
 		if (i < m) {
 			dst1.push_back(p[i]);
 		}
@@ -380,8 +461,8 @@ void galois_field::split_poly(std::vector<size_t> const& p, std::vector<size_t>&
 	}
 }
 
-std::vector<size_t>& galois_field::add_poly(std::vector<size_t>& a, std::vector<size_t>& b, std::vector<size_t>& dst, size_t m) {
-	for (size_t i = 0; i < b.size() + m; ++i) {
+std::vector<unsigned>& galois_field::add_poly(std::vector<unsigned>& a, std::vector<unsigned>& b, std::vector<unsigned>& dst, unsigned m) {
+	for (unsigned i = 0; i < b.size() + m; ++i) {
 		if (i < m && i >= a.size()) {
 			a.push_back(0);
 		}
@@ -397,42 +478,42 @@ std::vector<size_t>& galois_field::add_poly(std::vector<size_t>& a, std::vector<
 	return a;
 }
 
-std::vector<size_t>& galois_field::sub_poly(std::vector<size_t>& a, std::vector<size_t>& b, std::vector<size_t>& dst) {
-	size_t i;
+std::vector<unsigned>& galois_field::sub_poly(std::vector<unsigned>& a, std::vector<unsigned>& b, std::vector<unsigned>& dst) {
+	unsigned i;
 	for (i = 0; i < a.size() && i < b.size(); ++i) {
-		dst[i] = add(a[i], multiply(b[i], _p - 1));
+		dst[i] = add(a[i], multiply(b[i], 1));
 	}
 	while (i < a.size()) {
 		dst[i] = a[i];
 		++i;
 	}
 	while (i < b.size()) {
-		dst[i] = multiply(b[i], _p - 1);
+		dst[i] = multiply(b[i], 1);
 		++i;
 	}
 	return dst;
 }
 
-std::vector<size_t>& galois_field::multipy_poly_by_const(std::vector<size_t>& p, size_t a) {
-	for (size_t i = 0; i < p.size(); ++i) {
+std::vector<unsigned>& galois_field::multipy_poly_by_const(std::vector<unsigned>& p, unsigned a) {
+	for (unsigned i = 0; i < p.size(); ++i) {
 		p[i] = multiply(p[i], a);
 	}
 	return p;
 }
 
-std::vector<size_t>& galois_field::rev_poly(std::vector<size_t>& src, std::vector<size_t>& dst, size_t n) {
-	for (size_t i = 0; i < n; ++i) {
+std::vector<unsigned>& galois_field::rev_poly(std::vector<unsigned>& src, std::vector<unsigned>& dst, unsigned n) {
+	for (unsigned i = 0; i < n; ++i) {
 		dst[n - i - 1] = src[i];
 	}
 	return dst;
 }
 
-std::vector<size_t> galois_field::inv_poly(std::vector<size_t>& src, std::vector<size_t>& dst, size_t mod) {
+std::vector<unsigned> galois_field::inv_poly(std::vector<unsigned>& src, std::vector<unsigned>& dst, unsigned mod) {
 	// make zeros in inverse tmp
-	size_t g0 = inverse(src[0]);
-	size_t r = std::countl_zero(mod); // mb bad
+	unsigned g0 = inverse(src[0]);
+	unsigned r = std::countl_zero(mod); // mb bad
 	dst[0] = 1;
-	for (size_t i = 1; i < r; ++i) {
+	for (unsigned i = 1; i < r; ++i) {
 		fast_poly_multiplication(dst, dst, _inverse_temporary1);
 		fast_poly_multiplication(src, _inverse_temporary1, _inverse_temporary2);
 		multipy_poly_by_const(dst, 2);
@@ -444,8 +525,8 @@ std::vector<size_t> galois_field::inv_poly(std::vector<size_t>& src, std::vector
 	return dst;
 }
 
-std::vector<size_t>& galois_field::remainder_of_power(std::vector<size_t>& a, size_t n) {
-	for (size_t i = n; i < a.size(); ++i) {
+std::vector<unsigned>& galois_field::remainder_of_power(std::vector<unsigned>& a, unsigned n) {
+	for (unsigned i = n; i < a.size(); ++i) {
 		a[i] = 0;
 	}
 	return a;
