@@ -10,10 +10,10 @@ struct InterpolationBasedFastRSDecoder {
 	galois_field _gf;
 
 	size_t _n, _k, _t;
-	std::array<std::vector<size_t>, 12> _tmp;
+	std::array<std::vector<unsigned>, 12> _tmp;
 
-	std::vector<size_t> encode(std::vector<size_t> const&);
+	std::vector<unsigned> encode(std::vector<unsigned> const&);
 
-	void decode(std::vector<size_t>&);
+	void decode(std::vector<unsigned>&);
 
 };

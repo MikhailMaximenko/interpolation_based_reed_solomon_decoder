@@ -8,17 +8,21 @@
 
 
 
-void InterpolationBasedFastRSDecoder::decode(std::vector<size_t>& cw) {
-	//_gf.IDFT(cw, _tmp[0], _gf._exp_table[1]);
-	//_tmp[1].insert(_tmp[1].begin(), _tmp[0].rbegin(), _tmp[0].rend() + (_n - 2 * _t));
-	//_tmp[2].insert(_tmp[2].begin(), _tmp[0].rbegin() - _t, _tmp[0].rend() + (_n - 2 * _t - 1)); // n - 2 * t + 1 ..n - t
-	//_gf.SOLVE_TOEPITZ(_tmp[1], _tmp[2], _t, _tmp[3]);
+void InterpolationBasedFastRSDecoder::decode(std::vector<unsigned>& cw) {
+	_gf.IDFT(cw, _tmp[0]);
+	_tmp[1].insert(_tmp[1].begin(), _tmp[0].rbegin(), _tmp[0].rend() + (_n - 2 * _t));
+	_tmp[2].insert(_tmp[2].begin(), _tmp[0].rbegin() - _t, _tmp[0].rend() + (_n - 2 * _t - 1)); // n - 2 * t + 1 ..n - t
+	_gf.SOLVE_TOEPITZ(_tmp[1], _tmp[2], _t, _tmp[3]);
+	for (ptrdiff_t i = _k - 1; i >= 0; --i) {
+		_tmp[0][i] = 0;
+		for (size_t j = 0; j < _t; ++j) {
+			_tmp[0][i] = _gf.add(_tmp[0][i], _gf.multiply(_tmp[0][i + j], _tmp[3][j]));
+		}
+	}
 
-
-
-	//using std::swap;
-	//swap(cw, _tmp[1]);
-	//_gf.sub_poly(_tmp[1], _gf.DFT(), cw);
+	using std::swap;
+	swap(cw, _tmp[1]);
+	_gf.sub_poly(_tmp[1], _gf.DFT(_tmp[0], _tmp[2]), cw);
 
 
 }

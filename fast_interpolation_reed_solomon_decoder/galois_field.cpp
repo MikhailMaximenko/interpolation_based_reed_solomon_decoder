@@ -150,8 +150,8 @@ unsigned galois_field::divide(unsigned a, unsigned b) const {
 }
 
 std::vector<unsigned>& galois_field::fast_poly_multiplication(std::vector<unsigned>& a, std::vector<unsigned>& b, std::vector<unsigned>& dst) {
-	call_fft(a, _a_tmp);
-	call_fft(b, _b_tmp);
+	DFT(a, _a_tmp);
+	DFT(b, _b_tmp);
 	std::cout << "\n";
 	for (unsigned* i = a.data(); i < a.data() + a.size(); ++i) {
 		std::cout << *i << " ";
@@ -180,8 +180,8 @@ std::vector<unsigned>& galois_field::fast_poly_multiplication(std::vector<unsign
 		std::cout << i << " ";
 	}
 	std::cout << "\n";
-	call_fft(_a_tmp, dst);
-	std::reverse(dst.begin() + 1, dst.end());
+	IDFT(_a_tmp, dst);
+	//std::reverse(dst.begin() + 1, dst.end());
 	//multipy_poly_by_const(dst, _inverse_element);
 
 	return dst;
@@ -372,9 +372,10 @@ std::vector<unsigned>& galois_field::DFT(std::vector<unsigned>& src, std::vector
 
 std::vector<unsigned>& galois_field::IDFT(std::vector<unsigned>& src, std::vector<unsigned>& dst) {
 	DFT(src, dst);
-	for (unsigned i = 0; i < dst.size(); ++i) {
+	/*for (unsigned i = 0; i < dst.size(); ++i) {
 		dst[i] = multiply(dst[i], _inverse_element);
-	}
+	}*/
+	std::reverse(dst.begin() + 1, dst.end());
 	return dst;
 }
 
