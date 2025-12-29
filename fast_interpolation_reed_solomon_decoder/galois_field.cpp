@@ -395,7 +395,7 @@ std::vector<unsigned>& galois_field::DFTimpl(std::vector<unsigned>& src, std::ve
 	unsigned k = 8 * sizeof(unsigned) - std::countl_zero<unsigned>(size) - 1;
 	std::cout << k << "\n";
 	if (i == k) {
-		dst[0] = src[r]; // !!
+		dst[r] = src[r]; // !!
 		return dst;
 	}
 	// prepare _dft_tmp[i][2] and _dft_tmp[i][3]
@@ -414,10 +414,11 @@ std::vector<unsigned>& galois_field::DFTimpl(std::vector<unsigned>& src, std::ve
 	std::cout << "\n";
 	// count answer
 	for (unsigned j = 0; j < (1 << (k - i - 1)); ++j) {
-		unsigned pos = j * (1 << (i + 1));
-		//std::cout << i << " " << pos << " " << (1 << i) << "\n";
-		//std::cout << _dft_tmp[i][0][pos] << " " << _dft_tmp[i][1][pos] << "\n";
-		//std::cout << _s[i + 1][pos] << "\n";
+		unsigned pos = j << (i + 1);
+		// V_i^k has 1 << (k - i) members. 
+		// we wish subspace from 
+		// 1 << k .. 1 << (i + 1)
+		// 
 		dst[pos] = add(_dft_tmp[i][0][pos], multiply(_s[i + 1][pos], _dft_tmp[i][1][pos]));
 		dst[pos + (1 << i)] = add(dst[pos], _dft_tmp[i][1][pos]);
 	}
@@ -429,23 +430,23 @@ std::vector<unsigned>& galois_field::DFTimpl(std::vector<unsigned>& src, std::ve
 std::vector<unsigned>& galois_field::IDFTimpl(std::vector<unsigned>& src, std::vector<unsigned>& dst, unsigned size, unsigned i, unsigned r) {
 	unsigned k = 8 * sizeof(unsigned) - std::countl_zero<unsigned>(size) - 1;
 	if (i == k) {
-		dst[0] = src[r]; // !!
+		dst[r] = src[r]; // !!
 		return dst;
 	}
 
 	for (unsigned j = 0; j < (1 << (k - i - 1)); ++j) {
-		unsigned pos = j * (1 << (i + 1));
+		unsigned pos =	j << (i + 1);
 		_dft_tmp[i][2][pos] = add(src[pos], src[pos + (1 << i)]);
 		_dft_tmp[i][3][pos] = add(src[pos], multiply(_s[i + 1][pos], _dft_tmp[i][2][pos]));
 	}
 
 	IDFTimpl(_dft_tmp[i][2], _dft_tmp[i][0], size / 2, i + 1, r);
 	IDFTimpl(_dft_tmp[i][3], _dft_tmp[i][1], size / 2, i + 1, r + (1 << i));
-	// count an answer
-	// ... 
-	for (size_t j = 0; j < (1 << k); ++j) {
-		dst[j] = _dft_tmp[i][0][j];
-		dst[j + 1] = _dft_tmp[i][1][j];
+	// count the answer
+	for (size_t j = 0; j < (1 << (k - i - 1)); ++j) {
+		unsigned pos = j << (i + 1);
+		dst[pos] = _dft_tmp[i][0][pos];
+		dst[pos + (1 << i)] = _dft_tmp[i][1][pos];
 	}
 	return dst;
 } // binary architecture a with variable size

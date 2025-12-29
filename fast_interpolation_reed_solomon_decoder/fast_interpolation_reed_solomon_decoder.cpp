@@ -80,7 +80,7 @@ int main()
 	std::cout << "fst\n";
 	gf2.DFT(b1, g, 4, 0);
 
-	std::cout << "complered!\n";
+	std::cout << "completed!\n";
 
 	for (size_t i = 0; i < a1.size(); ++i) {
 		a1[i] = gf2.multiply(f[i], g[i]);
@@ -90,6 +90,18 @@ int main()
 
 	gf2.IDFT(a1, b1, 4, 0);
 	for (auto i : b1) {
+		std::cout << i << " ";
+	}
+	std::cout << "\n";
+	a1 = { 2, 3, 0, 0, 0, 0, 0, 0 };
+	gf2.DFT(a1, f, 4, 0);
+	std::cout << "straight\n";
+	for (auto i : f) {
+		std::cout << i << " ";
+	}
+	std::cout << "\n";
+	std::cout << "inverse\n";
+	for (auto i : gf2.IDFT(f, g, 4, 0)) {
 		std::cout << i << " ";
 	}
 	std::cout << "\n";
