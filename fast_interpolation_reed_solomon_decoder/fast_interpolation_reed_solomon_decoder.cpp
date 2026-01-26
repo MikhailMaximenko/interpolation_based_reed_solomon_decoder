@@ -80,7 +80,7 @@ int main()
 	std::cout << "fst\n";
 	gf2.DFT(b1, g, 4, 0);
 
-	std::cout << "complered!\n";
+	std::cout << "completed!\n";
 
 	for (size_t i = 0; i < a1.size(); ++i) {
 		a1[i] = gf2.multiply(f[i], g[i]);
@@ -94,6 +94,19 @@ int main()
 	}
 	std::cout << "\n";
 
+	std::cout << "id expected for:\n";
+	a1 = { 2, 3, 0, 0, 0, 0, 0, 0 };
+	for (auto i : a1) {
+		std::cout << i << " ";
+	}
+	std::cout << "\n";
+	gf2.DFT(a1, b1, 4, 0);
+	gf2.IDFT(b1, a1, 4, 0);
+	std::cout << "got:\n";
+	for (auto i : a1) {
+		std::cout << i << " ";
+	}
+	std::cout << "\n";
 
 	return 0;
 }

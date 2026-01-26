@@ -401,14 +401,14 @@ std::vector<unsigned>& galois_field::DFTimpl(std::vector<unsigned>& src, std::ve
 	// prepare _dft_tmp[i][2] and _dft_tmp[i][3]
 
 	// call dfts
-	DFTimpl(src, _dft_tmp[i][0], size / 2, i + 1, r);
-	DFTimpl(src, _dft_tmp[i][1], size / 2, i + 1, r + (1 << i));
+	DFTimpl(src, _dft_tmp[i + 1][r], size / 2, i + 1, r);
+	DFTimpl(src, _dft_tmp[i + 1][r + (1 << i)], size / 2, i + 1, r + (1 << i));
 	std::cout << "dfts: \n";
-	for (auto v : _dft_tmp[i][0]) {
+	for (auto v : _dft_tmp[i + 1][r]) {
 		std::cout << v << " ";
 	}
 	std::cout << "\n";
-	for (auto v : _dft_tmp[i][1]) {
+	for (auto v : _dft_tmp[i + 1][r + (1 << i)]) {
 		std::cout << v << " ";
 	}
 	std::cout << "\n";
@@ -418,7 +418,7 @@ std::vector<unsigned>& galois_field::DFTimpl(std::vector<unsigned>& src, std::ve
 		//std::cout << i << " " << pos << " " << (1 << i) << "\n";
 		//std::cout << _dft_tmp[i][0][pos] << " " << _dft_tmp[i][1][pos] << "\n";
 		//std::cout << _s[i + 1][pos] << "\n";
-		dst[pos] = add(_dft_tmp[i][0][pos], multiply(_s[i + 1][pos], _dft_tmp[i][1][pos]));
+		dst[pos] = add(_dft_tmp[i + 1][r][pos], multiply(_s[i + 1][pos], _dft_tmp[i + 1][r + (1 << i)][pos]));
 		dst[pos + (1 << i)] = add(dst[pos], _dft_tmp[i][1][pos]);
 	}
 	std::cout << "here" << std::endl;
@@ -435,12 +435,12 @@ std::vector<unsigned>& galois_field::IDFTimpl(std::vector<unsigned>& src, std::v
 
 	for (unsigned j = 0; j < (1 << (k - i - 1)); ++j) {
 		unsigned pos = j * (1 << (i + 1));
-		_dft_tmp[i][2][pos] = add(src[pos], src[pos + (1 << i)]);
-		_dft_tmp[i][3][pos] = add(src[pos], multiply(_s[i + 1][pos], _dft_tmp[i][2][pos]));
+		_dft_tmp[i + 1][r + (1 << i)][pos] = add(_dft_tmp[i][r][pos], _dft_tmp[i][r][pos + (1 << i)]);
+		_dft_tmp[i + 1][r][pos] = add(_dft_tmp[i][r][pos], multiply(_s[i + 1][pos], _dft_tmp[i + 1][r + (1 << i)][pos]));
 	}
 
-	IDFTimpl(_dft_tmp[i][2], _dft_tmp[i][0], size / 2, i + 1, r);
-	IDFTimpl(_dft_tmp[i][3], _dft_tmp[i][1], size / 2, i + 1, r + (1 << i));
+	IDFTimpl(src, _dft_tmp[i][0], size / 2, i + 1, r);
+	IDFTimpl(src, _dft_tmp[i][1], size / 2, i + 1, r + (1 << i));
 	// count an answer
 	// ... 
 	for (size_t j = 0; j < (1 << k); ++j) {

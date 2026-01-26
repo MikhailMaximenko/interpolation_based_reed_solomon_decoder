@@ -88,7 +88,7 @@ public:
 
 	std::array<std::vector<unsigned>, 12> _solve_toeplitz_tmp;
 
-	std::vector<std::array<std::vector<unsigned>, 4>> _dft_tmp;
+	std::vector<std::vector<std::vector<unsigned>>> _dft_tmp;
 
 	std::vector<std::vector<unsigned>> _s;
 
