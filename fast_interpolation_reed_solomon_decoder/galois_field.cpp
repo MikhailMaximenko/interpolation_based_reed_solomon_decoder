@@ -395,7 +395,7 @@ std::vector<unsigned>& galois_field::DFTimpl(std::vector<unsigned>& src, std::ve
 	unsigned k = 8 * sizeof(unsigned) - std::countl_zero<unsigned>(size) - 1;
 	std::cout << k << "\n";
 	if (i == k) {
-		dst[0] = src[r]; // !!
+		dst[r] = src[r]; // !!
 		return dst;
 	}
 	// prepare _dft_tmp[i][2] and _dft_tmp[i][3]
@@ -429,7 +429,7 @@ std::vector<unsigned>& galois_field::DFTimpl(std::vector<unsigned>& src, std::ve
 std::vector<unsigned>& galois_field::IDFTimpl(std::vector<unsigned>& src, std::vector<unsigned>& dst, unsigned size, unsigned i, unsigned r) {
 	unsigned k = 8 * sizeof(unsigned) - std::countl_zero<unsigned>(size) - 1;
 	if (i == k) {
-		dst[0] = src[r]; // !!
+		dst[r] = src[r]; // !!
 		return dst;
 	}
 
@@ -439,8 +439,8 @@ std::vector<unsigned>& galois_field::IDFTimpl(std::vector<unsigned>& src, std::v
 		_dft_tmp[i + 1][r][pos] = add(_dft_tmp[i][r][pos], multiply(_s[i + 1][pos], _dft_tmp[i + 1][r + (1 << i)][pos]));
 	}
 
-	IDFTimpl(src, _dft_tmp[i][0], size / 2, i + 1, r);
-	IDFTimpl(src, _dft_tmp[i][1], size / 2, i + 1, r + (1 << i));
+	IDFTimpl(_dft_tmp[i][2], _dft_tmp[i][0], size / 2, i + 1, r);
+	IDFTimpl(_dft_tmp[i][3], _dft_tmp[i][1], size / 2, i + 1, r + (1 << i));
 	// count an answer
 	// ... 
 	for (size_t j = 0; j < (1 << k); ++j) {

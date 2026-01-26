@@ -93,6 +93,18 @@ int main()
 		std::cout << i << " ";
 	}
 	std::cout << "\n";
+	a1 = { 2, 3, 0, 0, 0, 0, 0, 0 };
+	gf2.DFT(a1, f, 4, 0);
+	std::cout << "straight\n";
+	for (auto i : f) {
+		std::cout << i << " ";
+	}
+	std::cout << "\n";
+	std::cout << "inverse\n";
+	for (auto i : gf2.IDFT(f, g, 4, 0)) {
+		std::cout << i << " ";
+	}
+	std::cout << "\n";
 
 	std::cout << "id expected for:\n";
 	a1 = { 2, 3, 0, 0, 0, 0, 0, 0 };
