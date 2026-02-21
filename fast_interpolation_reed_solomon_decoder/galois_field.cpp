@@ -40,7 +40,10 @@ void galois_field::init() {
 	// evaluate s
 	// recurrent way of evaluation may be easier
 	_s.resize(_m);
-
+	_s[0].resize(_q);
+	for (size_t i = 1; i < _q; ++i) {
+		_s[0][i] = i;
+	}
 	for (size_t level = 1; level < _m; ++level) {
 		_s[level].resize(_q);
 		for (size_t i = 0; i < _q; ++i) {
@@ -51,9 +54,9 @@ void galois_field::init() {
 		}
 	}
 	std::cout << "s:\n";
-	for (size_t level = 1; level < _m; ++level) {
+	for (size_t level = 0; level < _m; ++level) {
 		std::cout << level << ": ";
-		unsigned inv= inverse(_s[level][1 << level]);
+		unsigned inv = inverse(_s[level][1 << level]);
 		for (size_t i = 0; i < _q; ++i) {
 			_s[level][i] = multiply(_s[level][i], inv);
 			std::cout << _s[level][i] << " ";
@@ -62,7 +65,15 @@ void galois_field::init() {
 	}
 
 	_dft_tmp.resize(_m + 1);
+	_idft_tmp.resize(_m + 1);
 	for (auto& a : _dft_tmp) {
+		a.resize(_q);
+		for (auto& v : a) {
+			v.resize(_q);
+		}
+	}
+	for (auto& a : _idft_tmp) {
+		a.resize(_q);
 		for (auto& v : a) {
 			v.resize(_q);
 		}
@@ -175,7 +186,7 @@ std::vector<unsigned>& galois_field::fast_poly_multiplication(std::vector<unsign
 	for (unsigned i = 0; i < a.size(); ++i) {
 		_a_tmp[i] = multiply(_a_tmp[i], _b_tmp[i]);
 	}
-	std::cout << "mult: ";
+	std::cout << "fft mult: ";
 	for (auto i : _a_tmp) {
 		std::cout << i << " ";
 	}
@@ -367,6 +378,7 @@ std::vector<unsigned>& galois_field::SOLVE_TOEPITZ(std::vector<unsigned>& a, std
 
 std::vector<unsigned>& galois_field::DFT(std::vector<unsigned>& src, std::vector<unsigned>& dst) {
 	// call fft
+	call_fft(src, dst);
 	return dst;
 }
 
@@ -393,17 +405,19 @@ std::vector<unsigned>& galois_field::IDFT(std::vector<unsigned>& src, std::vecto
 // such dft allows to decrease overall decoding complexity to nlog(n)log(log(n)) for binary galois field (non-fft-friendly field case)
 std::vector<unsigned>& galois_field::DFTimpl(std::vector<unsigned>& src, std::vector<unsigned>& dst, unsigned size, unsigned i, unsigned r) {
 	unsigned k = 8 * sizeof(unsigned) - std::countl_zero<unsigned>(size) - 1;
-	std::cout << k << "\n";
+	//std::cout << k << " " << r << " " << i << "\n";
 	if (i == k) {
-		dst[r] = src[r]; // !!
+		dst[0] = src[r]; // !!
 		return dst;
 	}
 	// prepare _dft_tmp[i][2] and _dft_tmp[i][3]
 
 	// call dfts
-	DFTimpl(src, _dft_tmp[i + 1][r], size / 2, i + 1, r);
-	DFTimpl(src, _dft_tmp[i + 1][r + (1 << i)], size / 2, i + 1, r + (1 << i));
-	std::cout << "dfts: \n";
+	DFTimpl(src, _dft_tmp[i + 1][r], size, i + 1, r);
+	DFTimpl(src, _dft_tmp[i + 1][r + (1 << i)], size, i + 1, r + (1 << i));
+	//std::cout << k << " " << i << " " << r << std::endl;
+	//std::cout << dst.size() << " " << _dft_tmp.size() << std::endl;
+	/*std::cout << "dfts: \n";
 	for (auto v : _dft_tmp[i + 1][r]) {
 		std::cout << v << " ";
 	}
@@ -411,17 +425,19 @@ std::vector<unsigned>& galois_field::DFTimpl(std::vector<unsigned>& src, std::ve
 	for (auto v : _dft_tmp[i + 1][r + (1 << i)]) {
 		std::cout << v << " ";
 	}
-	std::cout << "\n";
+	std::cout << "\n";*/
 	// count answer
 	for (unsigned j = 0; j < (1 << (k - i - 1)); ++j) {
 		unsigned pos = j * (1 << (i + 1));
+		//std::cout << j << " " << pos << "\n";
 		//std::cout << i << " " << pos << " " << (1 << i) << "\n";
 		//std::cout << _dft_tmp[i][0][pos] << " " << _dft_tmp[i][1][pos] << "\n";
 		//std::cout << _s[i + 1][pos] << "\n";
-		dst[pos] = add(_dft_tmp[i + 1][r][pos], multiply(_s[i + 1][pos], _dft_tmp[i + 1][r + (1 << i)][pos]));
-		dst[pos + (1 << i)] = add(dst[pos], _dft_tmp[i][1][pos]);
+		dst[pos] = add(_dft_tmp[i + 1][r][pos], multiply(_s[i][pos], _dft_tmp[i + 1][r + (1 << i)][pos]));
+		dst[pos + (1 << i)] = add(dst[pos], _dft_tmp[i + 1][r + (1 << i)][pos]);
+		//std::cout << dst[pos] << " " << dst[pos + (1 << i)] << " |";
 	}
-	std::cout << "here" << std::endl;
+	//std::cout << "here" << std::endl;
 	return dst;
 } // binary architecture a with variable size
 
@@ -429,24 +445,61 @@ std::vector<unsigned>& galois_field::DFTimpl(std::vector<unsigned>& src, std::ve
 std::vector<unsigned>& galois_field::IDFTimpl(std::vector<unsigned>& src, std::vector<unsigned>& dst, unsigned size, unsigned i, unsigned r) {
 	unsigned k = 8 * sizeof(unsigned) - std::countl_zero<unsigned>(size) - 1;
 	if (i == k) {
-		dst[r] = src[r]; // !!
+		//std::cout << r << " " << k << " " << i << "\n";
+		/*for (auto v : src) {
+			std::cout << v << " ";
+		}
+		std::cout << "\n";*/
+		dst[r] = src[0]; // !!
 		return dst;
 	}
 
 	for (unsigned j = 0; j < (1 << (k - i - 1)); ++j) {
 		unsigned pos = j * (1 << (i + 1));
-		_dft_tmp[i + 1][r + (1 << i)][pos] = add(_dft_tmp[i][r][pos], _dft_tmp[i][r][pos + (1 << i)]);
-		_dft_tmp[i + 1][r][pos] = add(_dft_tmp[i][r][pos], multiply(_s[i + 1][pos], _dft_tmp[i + 1][r + (1 << i)][pos]));
+		_dft_tmp[i + 1][r + (1 << i)][pos] = add(src[pos], src[pos + (1 << i)]);
+		_dft_tmp[i + 1][r][pos] = add(src[pos], multiply(_s[i][pos], _dft_tmp[i + 1][r + (1 << i)][pos]));
 	}
 
-	IDFTimpl(_dft_tmp[i][2], _dft_tmp[i][0], size / 2, i + 1, r);
-	IDFTimpl(_dft_tmp[i][3], _dft_tmp[i][1], size / 2, i + 1, r + (1 << i));
-	// count an answer
-	// ... 
-	for (size_t j = 0; j < (1 << k); ++j) {
-		dst[j] = _dft_tmp[i][0][j];
-		dst[j + 1] = _dft_tmp[i][1][j];
+	/*std::cout << "dfts: \n";
+	for (auto v : _dft_tmp[i + 1][r]) {
+		std::cout << v << " ";
 	}
+	std::cout << "\n";
+	for (auto v : _dft_tmp[i + 1][r + (1 << i)]) {
+		std::cout << v << " ";
+	}
+	std::cout << "\n";*/
+
+	IDFTimpl(_dft_tmp[i + 1][r], _idft_tmp[i + 1][r], size, i + 1, r);
+	IDFTimpl(_dft_tmp[i + 1][r + (1 << i)], _idft_tmp[i + 1][r + (1 << i)], size, i + 1, r + (1 << i));
+	// count an answer
+	/*std::cout << "idfts: \n";
+	for (auto v : _idft_tmp[i + 1][r]) {
+		std::cout << v << " ";
+	}
+	std::cout << "\n";
+	for (auto v : _idft_tmp[i + 1][r + (1 << i)]) {
+		std::cout << v << " ";
+	}
+	std::cout << "\n";*/
+	// ... 
+
+	for (size_t j = 0; j < 1 << (k - i - 1); ++j) {
+		unsigned pos = j * (1 << (i + 1));
+		dst[pos + r] = _idft_tmp[i + 1][r][pos + r];
+		dst[pos + r + (1 << i)] = _idft_tmp[i + 1][r + (1 << i)][pos + r + (1 << i)];	
+	}
+	/*for (auto& v : _idft_tmp[i + 1][r]) {
+		v = 0;
+	}
+	for (auto& v : _idft_tmp[i + 1][r + (1 << i)]) {
+		v = 0;
+	}*/
+	/*std::cout << k << " " << i << " " << r << "\nres:\n";
+	for (auto v : dst) {
+		std::cout << v << " ";
+	}
+	std::cout << "\n";*/
 	return dst;
 } // binary architecture a with variable size
 
