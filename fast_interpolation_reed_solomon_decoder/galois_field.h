@@ -53,8 +53,10 @@ struct galois_field
 	std::vector<unsigned>& add_poly(std::vector<unsigned>&, std::vector<unsigned>&, std::vector<unsigned>&, unsigned);
 	std::vector<unsigned>& sub_poly(std::vector<unsigned>&, std::vector<unsigned>&, std::vector<unsigned>&);
 
-private:
+public:
 	void init();
+
+	void print_poly(std::vector<unsigned> const&);
 
 	std::vector<unsigned>& DFTimpl(std::vector<unsigned>&, std::vector<unsigned>&, unsigned, unsigned, unsigned); // binary architecture a with variable size
 	std::vector<unsigned>& IDFTimpl(std::vector<unsigned>&, std::vector<unsigned>&, unsigned, unsigned, unsigned); // binary architecture a with variable size

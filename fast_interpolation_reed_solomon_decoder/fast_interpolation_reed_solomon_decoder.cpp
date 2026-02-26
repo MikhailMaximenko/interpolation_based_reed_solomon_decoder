@@ -45,19 +45,19 @@ int main()
 	std::vector<unsigned> b{ 1, 1, 1, 0, 0, 0, 0 };
 	std::vector<unsigned> c(7);
 	gf2.fast_poly_multiplication(a, b, c);
-	//for (auto i : gf2._a_tmp) {
-	//	std::cout << i << " ";
-	//}
-	//std::cout << "\n";
-	//for (auto i : gf2._b_tmp) {
-	//	std::cout << i << " ";
-	//}
-	//std::cout << "\n";
-	//call_fft(gf2._b_tmp, gf2._a_tmp);
-	//for (auto i : gf2._a_tmp) {
-		//std::cout << i << " ";
-	//}
-	//std::cout << "\n";
+	for (auto i : gf2._a_tmp) {
+		std::cout << i << " ";
+	}
+	std::cout << "\n";
+	for (auto i : gf2._b_tmp) {
+		std::cout << i << " ";
+	}
+	std::cout << "\n";
+	call_fft(gf2._b_tmp, gf2._a_tmp);
+	for (auto i : gf2._a_tmp) {
+		std::cout << i << " ";
+	}
+	std::cout << "\n";
 	std::cout << "res:\n";
 	for (auto i : c) {
 		std::cout << i << " ";
@@ -163,6 +163,28 @@ int main()
 		std::cout << i << " ";
 	}
 	std::cout << "\n";*/
+
+	//std::vector<unsigned> a_inv(7), kk(7);
+
+	//gf2.inv_poly(a, a_inv, 7);
+
+	//gf2.fast_poly_multiplication(a, a_inv, kk);
+
+	//for (auto i : a_inv) {
+	//	std::cout << i << " ";
+	//}
+	//std::cout << "\n";
+	//for (auto i : kk) {
+	//	std::cout << i << " ";
+	//}
+	//std::cout << "\n";
+
+
+	//std::vector<unsigned> aaa = { 2, 3, 0, 0, 0, 0, 0};
+	//std::vector<unsigned> ccc(7), bbb = { 1, 0, 0, 0, 0, 0, 0};
+	//gf2.fast_poly_multiplication(aaa, bbb, ccc);
+	//gf2.print_poly(ccc);
+
 
 	return 0;
 }
