@@ -18,6 +18,9 @@ galois_field::galois_field(unsigned m, unsigned gen_poly, unsigned poly_size)
 	, _log_table(_q)
 	, _exp_table(_q)
 	, _inverse_element(_n)
+	, _inverse_temporary1(_n)
+	, _inverse_temporary2(_n)
+	, _const2(_n, 0)
 	, _a_tmp(_n)
 	, _b_tmp(_n)
 {
@@ -25,6 +28,7 @@ galois_field::galois_field(unsigned m, unsigned gen_poly, unsigned poly_size)
 }
 
 void galois_field::init() {
+	_const2[0] = 2;
 	unsigned x = 1;
 	_exp_table[_n] = 1;
 	//_log_table[0] = 0;
@@ -78,6 +82,7 @@ void galois_field::init() {
 			v.resize(_q);
 		}
 	}
+
 	std::cout << "initted\n";
 }
 
@@ -163,34 +168,34 @@ unsigned galois_field::divide(unsigned a, unsigned b) const {
 std::vector<unsigned>& galois_field::fast_poly_multiplication(std::vector<unsigned>& a, std::vector<unsigned>& b, std::vector<unsigned>& dst) {
 	DFT(a, _a_tmp);
 	DFT(b, _b_tmp);
-	std::cout << "\n";
-	for (unsigned* i = a.data(); i < a.data() + a.size(); ++i) {
-		std::cout << *i << " ";
-	}
-	std::cout << "\n";
-	for (unsigned* i = b.data(); i < b.data() + b.size(); ++i) {
-		std::cout << *i << " ";
-	}
-	std::cout << "\n";
+	//std::cout << "\n";
+	//for (unsigned* i = a.data(); i < a.data() + a.size(); ++i) {
+	//	std::cout << *i << " ";
+	//}
+	//std::cout << "\n";
+	//for (unsigned* i = b.data(); i < b.data() + b.size(); ++i) {
+	//	std::cout << *i << " ";
+	//}
+	//std::cout << "\n";
 
-	std::cout << "ffts\n";
-	for (auto i : _a_tmp) {
-		std::cout << i << " ";
-	}
-	std::cout << "\n";
-	for (unsigned* i = _b_tmp.data(); i < _b_tmp.data() + _b_tmp.size(); ++i) {
-		std::cout << *i << " ";
-	}
-	std::cout << "\n";
+	//std::cout << "ffts\n";
+	//for (auto i : _a_tmp) {
+	//	std::cout << i << " ";
+	//}
+	//std::cout << "\n";
+	//for (unsigned* i = _b_tmp.data(); i < _b_tmp.data() + _b_tmp.size(); ++i) {
+	//	std::cout << *i << " ";
+	//}
+	//std::cout << "\n";
 
 	for (unsigned i = 0; i < a.size(); ++i) {
 		_a_tmp[i] = multiply(_a_tmp[i], _b_tmp[i]);
 	}
-	std::cout << "fft mult: ";
-	for (auto i : _a_tmp) {
-		std::cout << i << " ";
-	}
-	std::cout << "\n";
+	//std::cout << "fft mult: ";
+	//for (auto i : _a_tmp) {
+	//	std::cout << i << " ";
+	//}
+	//std::cout << "\n";
 	IDFT(_a_tmp, dst);
 	//std::reverse(dst.begin() + 1, dst.end());
 	//multipy_poly_by_const(dst, _inverse_element);
@@ -410,34 +415,16 @@ std::vector<unsigned>& galois_field::DFTimpl(std::vector<unsigned>& src, std::ve
 		dst[0] = src[r]; // !!
 		return dst;
 	}
-	// prepare _dft_tmp[i][2] and _dft_tmp[i][3]
-
 	// call dfts
 	DFTimpl(src, _dft_tmp[i + 1][r], size, i + 1, r);
 	DFTimpl(src, _dft_tmp[i + 1][r + (1 << i)], size, i + 1, r + (1 << i));
-	//std::cout << k << " " << i << " " << r << std::endl;
-	//std::cout << dst.size() << " " << _dft_tmp.size() << std::endl;
-	/*std::cout << "dfts: \n";
-	for (auto v : _dft_tmp[i + 1][r]) {
-		std::cout << v << " ";
-	}
-	std::cout << "\n";
-	for (auto v : _dft_tmp[i + 1][r + (1 << i)]) {
-		std::cout << v << " ";
-	}
-	std::cout << "\n";*/
-	// count answer
 	for (unsigned j = 0; j < (1 << (k - i - 1)); ++j) {
-		unsigned pos = j * (1 << (i + 1));
-		//std::cout << j << " " << pos << "\n";
-		//std::cout << i << " " << pos << " " << (1 << i) << "\n";
-		//std::cout << _dft_tmp[i][0][pos] << " " << _dft_tmp[i][1][pos] << "\n";
-		//std::cout << _s[i + 1][pos] << "\n";
-		dst[pos] = add(_dft_tmp[i + 1][r][pos], multiply(_s[i][pos], _dft_tmp[i + 1][r + (1 << i)][pos]));
-		dst[pos + (1 << i)] = add(dst[pos], _dft_tmp[i + 1][r + (1 << i)][pos]);
-		//std::cout << dst[pos] << " " << dst[pos + (1 << i)] << " |";
+		unsigned pos = j << (i + 1);
+		auto a = _dft_tmp[i + 1][r][pos];
+		auto b = _dft_tmp[i + 1][r + (1 << i)][pos];
+		dst[pos] = add(a, multiply(_s[i][pos], b));
+		dst[pos + (1 << i)] = add(dst[pos], b);
 	}
-	//std::cout << "here" << std::endl;
 	return dst;
 } // binary architecture a with variable size
 
@@ -445,61 +432,25 @@ std::vector<unsigned>& galois_field::DFTimpl(std::vector<unsigned>& src, std::ve
 std::vector<unsigned>& galois_field::IDFTimpl(std::vector<unsigned>& src, std::vector<unsigned>& dst, unsigned size, unsigned i, unsigned r) {
 	unsigned k = 8 * sizeof(unsigned) - std::countl_zero<unsigned>(size) - 1;
 	if (i == k) {
-		//std::cout << r << " " << k << " " << i << "\n";
-		/*for (auto v : src) {
-			std::cout << v << " ";
-		}
-		std::cout << "\n";*/
-		dst[r] = src[0]; // !!
+		dst[r] = src[0];
 		return dst;
 	}
 
 	for (unsigned j = 0; j < (1 << (k - i - 1)); ++j) {
-		unsigned pos = j * (1 << (i + 1));
+		unsigned pos = j << (i + 1);
 		_dft_tmp[i + 1][r + (1 << i)][pos] = add(src[pos], src[pos + (1 << i)]);
 		_dft_tmp[i + 1][r][pos] = add(src[pos], multiply(_s[i][pos], _dft_tmp[i + 1][r + (1 << i)][pos]));
 	}
 
-	/*std::cout << "dfts: \n";
-	for (auto v : _dft_tmp[i + 1][r]) {
-		std::cout << v << " ";
-	}
-	std::cout << "\n";
-	for (auto v : _dft_tmp[i + 1][r + (1 << i)]) {
-		std::cout << v << " ";
-	}
-	std::cout << "\n";*/
-
 	IDFTimpl(_dft_tmp[i + 1][r], _idft_tmp[i + 1][r], size, i + 1, r);
 	IDFTimpl(_dft_tmp[i + 1][r + (1 << i)], _idft_tmp[i + 1][r + (1 << i)], size, i + 1, r + (1 << i));
 	// count an answer
-	/*std::cout << "idfts: \n";
-	for (auto v : _idft_tmp[i + 1][r]) {
-		std::cout << v << " ";
-	}
-	std::cout << "\n";
-	for (auto v : _idft_tmp[i + 1][r + (1 << i)]) {
-		std::cout << v << " ";
-	}
-	std::cout << "\n";*/
-	// ... 
 
-	for (size_t j = 0; j < 1 << (k - i - 1); ++j) {
-		unsigned pos = j * (1 << (i + 1));
-		dst[pos + r] = _idft_tmp[i + 1][r][pos + r];
-		dst[pos + r + (1 << i)] = _idft_tmp[i + 1][r + (1 << i)][pos + r + (1 << i)];	
+	for (unsigned j = 0; j < (1 << (k - i - 1)); ++j) {
+		unsigned pos = (j << (i + 1)) + r;
+		dst[pos] = _idft_tmp[i + 1][r][pos];
+		dst[pos + (1 << i)] = _idft_tmp[i + 1][r + (1 << i)][(pos + (1 << i))];	
 	}
-	/*for (auto& v : _idft_tmp[i + 1][r]) {
-		v = 0;
-	}
-	for (auto& v : _idft_tmp[i + 1][r + (1 << i)]) {
-		v = 0;
-	}*/
-	/*std::cout << k << " " << i << " " << r << "\nres:\n";
-	for (auto v : dst) {
-		std::cout << v << " ";
-	}
-	std::cout << "\n";*/
 	return dst;
 } // binary architecture a with variable size
 
@@ -535,14 +486,14 @@ std::vector<unsigned>& galois_field::add_poly(std::vector<unsigned>& a, std::vec
 std::vector<unsigned>& galois_field::sub_poly(std::vector<unsigned>& a, std::vector<unsigned>& b, std::vector<unsigned>& dst) {
 	unsigned i;
 	for (i = 0; i < a.size() && i < b.size(); ++i) {
-		dst[i] = add(a[i], multiply(b[i], 1));
+		dst[i] = add(a[i], b[i]);
 	}
 	while (i < a.size()) {
 		dst[i] = a[i];
 		++i;
 	}
 	while (i < b.size()) {
-		dst[i] = multiply(b[i], 1);
+		dst[i] = b[i];
 		++i;
 	}
 	return dst;
@@ -565,16 +516,39 @@ std::vector<unsigned>& galois_field::rev_poly(std::vector<unsigned>& src, std::v
 std::vector<unsigned> galois_field::inv_poly(std::vector<unsigned>& src, std::vector<unsigned>& dst, unsigned mod) {
 	// make zeros in inverse tmp
 	unsigned g0 = inverse(src[0]);
-	unsigned r = std::countl_zero(mod); // mb bad
-	dst[0] = 1;
-	for (unsigned i = 1; i < r; ++i) {
-		fast_poly_multiplication(dst, dst, _inverse_temporary1);
-		fast_poly_multiplication(src, _inverse_temporary1, _inverse_temporary2);
-		multipy_poly_by_const(dst, 2);
-		sub_poly(dst, _inverse_temporary2, _inverse_temporary1);
-		using std::swap;
-		swap(dst, _inverse_temporary1);
+	unsigned r = sizeof(unsigned) * 8 - std::countl_zero(mod - 1); // mb bad
+	std::cout << mod << " " << r << "\n";
+	for (auto& v : dst) {
+		v = 0;
 	}
+	dst[0] = g0;
+	for (unsigned i = 1; i <= r; ++i) {
+		std::cout << i << std::endl;
+		// f * gi mod x ^ 2^i
+		fast_poly_multiplication(dst, src, _inverse_temporary1);
+
+		// 2 + fg
+		//_inverse_temporary1[0] = add(_inverse_temporary1[0], 2);
+		for (auto v : dst) {
+			std::cout << v << " ";
+		}
+		std::cout << "\n";
+		for (auto v : _inverse_temporary1) {
+			std::cout << v << " ";
+		}
+		std::cout << "\n";
+		/*for (auto v : _inverse_temporary2) {
+			std::cout << v << " ";
+		}
+		std::cout << "\n";*/
+		//fast_poly_multiplication(_inverse_temporary1, _inverse_temporary2, _inverse_temporary1);
+		// gi * (2 - f*gi) mod x^(2^i)
+		remainder_of_power(fast_poly_multiplication(dst, _inverse_temporary1, dst), 1 << i);
+		/*using std::swap;
+		swap(dst, _inverse_temporary1);*/
+	}
+
+	std::cout << "here\n";
 
 	return dst;
 }

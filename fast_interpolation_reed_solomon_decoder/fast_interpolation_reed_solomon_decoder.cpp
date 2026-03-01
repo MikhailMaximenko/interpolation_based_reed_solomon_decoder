@@ -42,9 +42,9 @@ int main()
 	std::cout << "\n";
 
 	std::vector<unsigned> a{ 2, 3, 0, 0, 0, 0, 0 };
-	std::vector<unsigned> b{ 1, 1, 1, 0, 0, 0, 0 };
+	/*std::vector<unsigned> b{ 1, 1, 1, 0, 0, 0, 0 };
 	std::vector<unsigned> c(7);
-	gf2.fast_poly_multiplication(a, b, c);
+	gf2.fast_poly_multiplication(a, b, c);*/
 	//for (auto i : gf2._a_tmp) {
 	//	std::cout << i << " ";
 	//}
@@ -58,111 +58,125 @@ int main()
 		//std::cout << i << " ";
 	//}
 	//std::cout << "\n";
-	std::cout << "res:\n";
-	for (auto i : c) {
-		std::cout << i << " ";
-	}
-	std::cout << "\n";
+	//std::cout << "res:\n";
+	//for (auto i : c) {
+	//	std::cout << i << " ";
+	//}
+	//std::cout << "\n";
 
 
-	std::cout << "snd\n";
-	std::vector<unsigned> a1 = { 2, 5, 0, 0, 0, 0, 0 }, b1 = {2, 5, 0, 0, 0, 0, 0}, f, g;
-	f.resize(7); g.resize(7);
-	gf2.DFT(a1, f);
-	std::cout << "fst\n";
-	gf2.DFT(b1, g);
+	//std::cout << "snd\n";
+	//std::vector<unsigned> a1 = { 2, 5, 0, 0, 0, 0, 0 }, b1 = {2, 5, 0, 0, 0, 0, 0}, f, g;
+	//f.resize(7); g.resize(7);
+	//gf2.DFT(a1, f);
+	//std::cout << "fst\n";
+	//gf2.DFT(b1, g);
 
-	std::cout << "completed!\n";
+	//std::cout << "completed!\n";
 
-	for (size_t i = 0; i < a1.size(); ++i) {
-		a1[i] = gf2.multiply(f[i], g[i]);
-		std::cout << a1[i] << " ";
-	}
-	std::cout << "\n";
+	//for (size_t i = 0; i < a1.size(); ++i) {
+	//	a1[i] = gf2.multiply(f[i], g[i]);
+	//	std::cout << a1[i] << " ";
+	//}
+	//std::cout << "\n";
 
-	gf2.IDFT(a1, b1);
-	for (auto i : b1) {
-		std::cout << i << " ";
-	}
-	std::cout << "\n";
-	a1 = { 2, 3, 0, 0, 0, 0, 0, 0 };
-	gf2.DFT(a1, f, 4, 0);
-	std::cout << "straight\n";
-	for (auto i : f) {
-		std::cout << i << " ";
-	}
-	std::cout << "\n";
-	std::cout << "inverse\n";
-	for (auto i : gf2.IDFT(f, g, 4, 0)) {
-		std::cout << i << " ";
-	}
-	std::cout << "\n";
+	//gf2.IDFT(a1, b1);
+	//for (auto i : b1) {
+	//	std::cout << i << " ";
+	//}
+	//std::cout << "\n";
+	//a1 = { 2, 3, 0, 0, 0, 0, 0, 0 };
+	//gf2.DFT(a1, f, 4, 0);
+	//std::cout << "straight\n";
+	//for (auto i : f) {
+	//	std::cout << i << " ";
+	//}
+	//std::cout << "\n";
+	//std::cout << "inverse\n";
+	//for (auto i : gf2.IDFT(f, g, 4, 0)) {
+	//	std::cout << i << " ";
+	//}
+	//std::cout << "\n";
 
-	std::cout << "id expected for:\n";
-	a1 = { 2, 1, 3, 5, 2, 7, 3, 1 };
-	b1 = { 0, 0, 0, 0, 0, 0, 0, 0 };
-	for (auto i : a1) {
-		std::cout << i << " ";
-	}
-	std::cout << "\ndft:\n";
-	gf2.DFT(a1, b1, 8, 0);
-	for (auto i : b1) {
-		std::cout << i << " ";
-	}
-	for (auto& i : a1) {
-		i = 0;
-	}
-	std::cout << "\n";
-	gf2.IDFT(b1, a1, 8, 0);
-	std::cout << "got:\n";
-	for (auto i : a1) {
-		std::cout << i << " ";
-	}
-	std::cout << "\n";
+	//std::cout << "id expected for:\n";
+	//a1 = { 2, 1, 3, 5, 2, 7, 3, 1 };
+	//b1 = { 0, 0, 0, 0, 0, 0, 0, 0 };
+	//for (auto i : a1) {
+	//	std::cout << i << " ";
+	//}
+	//std::cout << "\ndft:\n";
+	//gf2.DFT(a1, b1, 8, 0);
+	//for (auto i : b1) {
+	//	std::cout << i << " ";
+	//}
+	//for (auto& i : a1) {
+	//	i = 0;
+	//}
+	//std::cout << "\n";
+	//gf2.IDFT(b1, a1, 8, 0);
+	//std::cout << "got:\n";
+	//for (auto i : a1) {
+	//	std::cout << i << " ";
+	//}
+	//std::cout << "\n";
 
-	std::vector<unsigned> aa{ 2, 5, 0, 0, 0, 0, 0, 0 };
-	std::vector<unsigned> bb{ 2, 5, 0, 0, 0, 0, 0, 0 };
-	std::vector<unsigned> cc{ 4, 0, 7, 0, 0, 0, 0, 0 };
+	//std::vector<unsigned> aa{ 2, 5, 0, 0, 0, 0, 0, 0 };
+	//std::vector<unsigned> bb{ 2, 5, 0, 0, 0, 0, 0, 0 };
+	//std::vector<unsigned> cc{ 4, 0, 7, 0, 0, 0, 0, 0 };
 
-	std::vector<unsigned> r1(8), r2(8), r3(8);
+	//std::vector<unsigned> r1(8), r2(8), r3(8);
 
-	gf2.DFT(aa, r1, 4, 0);
-	std::cout << "dft1:\n";
-	for (auto i : r1) {
-		std::cout << i << " ";
-	}
-	std::cout << "\n";
-	gf2.DFT(bb, r2, 4, 0);
-	std::cout << "dft2:\n";
-	for (auto i : r2) {
-		std::cout << i << " ";
-	}
-	std::cout << "\n";
-	for (size_t i = 0; i < 8; ++i) {
-		r3[i] = gf2.multiply(r1[i], r2[i]);
-		r1[i] = 0;
-	}
-	for (auto i : r3) {
-		std::cout << i << " ";
-	}
-	std::cout << "\n";
-	gf2.IDFT(r3, r1, 4, 0);
-	for (auto kk : r1) {
-		std::cout << kk << " ";
-	}
-	std::cout << "\n";
-	gf2.DFT(cc, r2, 4, 0);
-	std::cout << "expected result dft:\n";
-	for (auto i : r2) {
-		std::cout << i << " ";
-	}
-	std::cout << "\n";
+	//gf2.DFT(aa, r1, 4, 0);
+	//std::cout << "dft1:\n";
+	//for (auto i : r1) {
+	//	std::cout << i << " ";
+	//}
+	//std::cout << "\n";
+	//gf2.DFT(bb, r2, 4, 0);
+	//std::cout << "dft2:\n";
+	//for (auto i : r2) {
+	//	std::cout << i << " ";
+	//}
+	//std::cout << "\n";
+	//for (size_t i = 0; i < 8; ++i) {
+	//	r3[i] = gf2.multiply(r1[i], r2[i]);
+	//	r1[i] = 0;
+	//}
+	//for (auto i : r3) {
+	//	std::cout << i << " ";
+	//}
+	//std::cout << "\n";
+	//gf2.IDFT(r3, r1, 4, 0);
+	//for (auto kk : r1) {
+	//	std::cout << kk << " ";
+	//}
+	//std::cout << "\n";
+	//gf2.DFT(cc, r2, 4, 0);
+	//std::cout << "expected result dft:\n";
+	//for (auto i : r2) {
+	//	std::cout << i << " ";
+	//}
+	//std::cout << "\n";
 	/*gf2.IDFT(r1, r2, 4, 0);
 	std::cout << "idft1:\n";
 	for (auto i : r2) {
 		std::cout << i << " ";
 	}
 	std::cout << "\n";*/
+	std::vector<unsigned> a_inv(7), kk(7);
+	gf2.inv_poly(a, a_inv, 7);
+
+	gf2.fast_poly_multiplication(a, a_inv, kk);
+	for (auto v : a_inv) {
+		std::cout << v << " ";
+	}
+	std::cout << "\n";
+	for (auto v : kk) {
+		std::cout << v << " ";
+	}
+	std::cout << "\n";
+	
+
 
 	return 0;
 }

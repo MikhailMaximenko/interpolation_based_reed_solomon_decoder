@@ -53,7 +53,7 @@ struct galois_field
 	std::vector<unsigned>& add_poly(std::vector<unsigned>&, std::vector<unsigned>&, std::vector<unsigned>&, unsigned);
 	std::vector<unsigned>& sub_poly(std::vector<unsigned>&, std::vector<unsigned>&, std::vector<unsigned>&);
 
-private:
+public:
 	void init();
 
 	std::vector<unsigned>& DFTimpl(std::vector<unsigned>&, std::vector<unsigned>&, unsigned, unsigned, unsigned); // binary architecture a with variable size
@@ -80,6 +80,8 @@ public:
 	std::vector<unsigned> _b_tmp;
 	std::vector<unsigned> _inverse_temporary1;
 	std::vector<unsigned> _inverse_temporary2;
+	std::vector<unsigned> _const2;
+
 	std::vector<std::array<std::pair<std::vector<unsigned>, std::vector<unsigned>>, 3>> _emgcd_tmp_result;
 	std::vector<std::array<std::vector<unsigned>, 8>> _emgcd_tmp_polynomials;
 
