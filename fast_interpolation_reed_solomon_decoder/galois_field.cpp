@@ -17,6 +17,8 @@ galois_field::galois_field(unsigned m, unsigned gen_poly, unsigned poly_size)
 	, _poly_size(poly_size)
 	, _log_table(_q)
 	, _exp_table(_q)
+	, _inverse_temporary1(_n)
+	, _inverse_temporary2(_n)
 	, _inverse_element(_n)
 	, _inverse_temporary1(_n)
 	, _inverse_temporary2(_n)
@@ -43,7 +45,8 @@ void galois_field::init() {
 
 	// evaluate s
 	// recurrent way of evaluation may be easier
-	_s.resize(_m);
+	_s.resize(_m + 1);
+	_s.back().resize(_q);
 	_s[0].resize(_q);
 	for (size_t i = 1; i < _q; ++i) {
 		_s[0][i] = i;
@@ -57,7 +60,7 @@ void galois_field::init() {
 			}
 		}
 	}
-	std::cout << "s:\n";
+	std::cout << "s:" << _s.size() << "\n";
 	for (size_t level = 0; level < _m; ++level) {
 		std::cout << level << ": ";
 		unsigned inv = inverse(_s[level][1 << level]);
@@ -67,6 +70,12 @@ void galois_field::init() {
 		}
 		std::cout << "\n";
 	}
+
+	std::cout << 3 << ": ";
+	for (size_t i = 0; i < _q; ++i) {
+		std::cout << _s[3][i] << " ";
+	}
+	std::cout << "\n";
 
 	_dft_tmp.resize(_m + 1);
 	_idft_tmp.resize(_m + 1);
@@ -166,37 +175,25 @@ unsigned galois_field::divide(unsigned a, unsigned b) const {
 }
 
 std::vector<unsigned>& galois_field::fast_poly_multiplication(std::vector<unsigned>& a, std::vector<unsigned>& b, std::vector<unsigned>& dst) {
-	DFT(a, _a_tmp);
+	/*DFT(a, _a_tmp);
 	DFT(b, _b_tmp);
-	//std::cout << "\n";
-	//for (unsigned* i = a.data(); i < a.data() + a.size(); ++i) {
-	//	std::cout << *i << " ";
-	//}
-	//std::cout << "\n";
-	//for (unsigned* i = b.data(); i < b.data() + b.size(); ++i) {
-	//	std::cout << *i << " ";
-	//}
-	//std::cout << "\n";
-
-	//std::cout << "ffts\n";
-	//for (auto i : _a_tmp) {
-	//	std::cout << i << " ";
-	//}
-	//std::cout << "\n";
-	//for (unsigned* i = _b_tmp.data(); i < _b_tmp.data() + _b_tmp.size(); ++i) {
-	//	std::cout << *i << " ";
-	//}
-	//std::cout << "\n";
-
+	
 	for (unsigned i = 0; i < a.size(); ++i) {
 		_a_tmp[i] = multiply(_a_tmp[i], _b_tmp[i]);
 	}
-	//std::cout << "fft mult: ";
-	//for (auto i : _a_tmp) {
-	//	std::cout << i << " ";
-	//}
-	//std::cout << "\n";
-	IDFT(_a_tmp, dst);
+	
+	IDFT(_a_tmp, dst);*/
+	for (auto& v : dst) {
+		v = 0;
+	}
+	for (size_t i = 0; i < a.size(); ++i) {
+		for (size_t j = 0; j < b.size(); ++j) {
+			if (i + j >= dst.size()) {
+				break;
+			}
+			dst[i + j] = add(dst[i + j], multiply(a[i], b[j]));
+		}
+	}
 	//std::reverse(dst.begin() + 1, dst.end());
 	//multipy_poly_by_const(dst, _inverse_element);
 
@@ -205,8 +202,16 @@ std::vector<unsigned>& galois_field::fast_poly_multiplication(std::vector<unsign
 
 std::vector<unsigned>& galois_field::fast_poly_division(std::vector<unsigned>& a, std::vector<unsigned>& b, std::vector<unsigned>& quotient, std::vector<unsigned>& remainder) {
 	if (a.size() < b.size()) {
+		std::copy(a.begin(), a.end(), remainder.begin());
+		std::fill(quotient.begin(), quotient.end(), 0);
+
 		return a;
 	}
+	rev_poly(a, quotient, degree(a));
+	inv_poly(b, _division_tmp, _n);
+
+
+
 	//return rev_poly();
 }
 
@@ -410,7 +415,6 @@ std::vector<unsigned>& galois_field::IDFT(std::vector<unsigned>& src, std::vecto
 // such dft allows to decrease overall decoding complexity to nlog(n)log(log(n)) for binary galois field (non-fft-friendly field case)
 std::vector<unsigned>& galois_field::DFTimpl(std::vector<unsigned>& src, std::vector<unsigned>& dst, unsigned size, unsigned i, unsigned r) {
 	unsigned k = 8 * sizeof(unsigned) - std::countl_zero<unsigned>(size) - 1;
-	//std::cout << k << " " << r << " " << i << "\n";
 	if (i == k) {
 		dst[0] = src[r]; // !!
 		return dst;
@@ -513,42 +517,30 @@ std::vector<unsigned>& galois_field::rev_poly(std::vector<unsigned>& src, std::v
 	return dst;
 }
 
+void galois_field::print_poly(std::vector<unsigned> const& p) {
+	for (auto v : p) {
+		std::cout << v << " ";
+	}
+	std::cout << "\n";
+
+}
+
 std::vector<unsigned> galois_field::inv_poly(std::vector<unsigned>& src, std::vector<unsigned>& dst, unsigned mod) {
+	print_poly(src);
+	std::cout << "--\n";
 	// make zeros in inverse tmp
 	unsigned g0 = inverse(src[0]);
-	unsigned r = sizeof(unsigned) * 8 - std::countl_zero(mod - 1); // mb bad
-	std::cout << mod << " " << r << "\n";
-	for (auto& v : dst) {
-		v = 0;
-	}
+	unsigned r = sizeof(unsigned) * 8 - std::countl_zero(mod); // mb bad
 	dst[0] = g0;
 	for (unsigned i = 1; i <= r; ++i) {
-		std::cout << i << std::endl;
-		// f * gi mod x ^ 2^i
-		fast_poly_multiplication(dst, src, _inverse_temporary1);
+		fast_poly_multiplication(dst, dst, _inverse_temporary1);
+		print_poly(dst);
+		print_poly(_inverse_temporary1);
+		fast_poly_multiplication(src, _inverse_temporary1, dst);
+		print_poly(dst);
+		std::cout << "------\n";
 
-		// 2 + fg
-		//_inverse_temporary1[0] = add(_inverse_temporary1[0], 2);
-		for (auto v : dst) {
-			std::cout << v << " ";
-		}
-		std::cout << "\n";
-		for (auto v : _inverse_temporary1) {
-			std::cout << v << " ";
-		}
-		std::cout << "\n";
-		/*for (auto v : _inverse_temporary2) {
-			std::cout << v << " ";
-		}
-		std::cout << "\n";*/
-		//fast_poly_multiplication(_inverse_temporary1, _inverse_temporary2, _inverse_temporary1);
-		// gi * (2 - f*gi) mod x^(2^i)
-		remainder_of_power(fast_poly_multiplication(dst, _inverse_temporary1, dst), 1 << i);
-		/*using std::swap;
-		swap(dst, _inverse_temporary1);*/
 	}
-
-	std::cout << "here\n";
 
 	return dst;
 }

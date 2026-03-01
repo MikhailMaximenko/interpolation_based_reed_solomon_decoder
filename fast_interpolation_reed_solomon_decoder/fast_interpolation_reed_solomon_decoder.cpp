@@ -178,5 +178,27 @@ int main()
 	
 
 
+	//std::vector<unsigned> a_inv(7), kk(7);
+
+	//gf2.inv_poly(a, a_inv, 7);
+
+	//gf2.fast_poly_multiplication(a, a_inv, kk);
+
+	//for (auto i : a_inv) {
+	//	std::cout << i << " ";
+	//}
+	//std::cout << "\n";
+	//for (auto i : kk) {
+	//	std::cout << i << " ";
+	//}
+	//std::cout << "\n";
+
+
+	//std::vector<unsigned> aaa = { 2, 3, 0, 0, 0, 0, 0};
+	//std::vector<unsigned> ccc(7), bbb = { 1, 0, 0, 0, 0, 0, 0};
+	//gf2.fast_poly_multiplication(aaa, bbb, ccc);
+	//gf2.print_poly(ccc);
+
+
 	return 0;
 }
