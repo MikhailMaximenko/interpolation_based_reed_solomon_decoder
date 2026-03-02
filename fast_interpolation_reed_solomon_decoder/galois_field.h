@@ -43,7 +43,7 @@ struct galois_field
 	std::vector<unsigned>& fast_poly_multiplication(std::vector<unsigned>&, std::vector<unsigned>&, std::vector<unsigned>&);
 	std::vector<unsigned>& fast_poly_division(std::vector<unsigned>&, std::vector<unsigned>&, std::vector<unsigned>&, std::vector<unsigned>&);
 	std::array<std::pair<std::vector<unsigned>, std::vector<unsigned>>, 3>& 
-		EMGCD(std::vector<unsigned> const&, std::vector<unsigned> const&, std::array<std::pair<std::vector<unsigned>, std::vector<unsigned>>, 3>&, unsigned);
+		EMGCD(std::vector<unsigned> const&, std::vector<unsigned> const&, std::array<std::pair<std::vector<unsigned>, std::vector<unsigned>>, 3>&, unsigned tmp_num);
 	void AD(std::vector<unsigned>&, unsigned, std::vector<unsigned>&, std::vector<unsigned>&);
 
 	std::vector<unsigned>& SOLVE_TOEPITZ(std::vector<unsigned>&, std::vector<unsigned>&, unsigned, std::vector<unsigned>&);
@@ -76,6 +76,7 @@ public:
 
 	std::vector<unsigned>& remainder_of_power(std::vector<unsigned>&, unsigned);
 	std::vector<unsigned> inv_poly(std::vector<unsigned>&, std::vector<unsigned>&, unsigned);
+	void assign_zero(std::vector<unsigned>&);
 
 public:
 	std::vector<unsigned> _a_tmp;

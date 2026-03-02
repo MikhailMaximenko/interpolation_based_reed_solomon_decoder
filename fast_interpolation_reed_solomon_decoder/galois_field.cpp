@@ -20,8 +20,7 @@ galois_field::galois_field(unsigned m, unsigned gen_poly, unsigned poly_size)
 	, _inverse_temporary1(_n)
 	, _inverse_temporary2(_n)
 	, _inverse_element(_n)
-	, _inverse_temporary1(_n)
-	, _inverse_temporary2(_n)
+	, _division_tmp(_n)
 	, _const2(_n, 0)
 	, _a_tmp(_n)
 	, _b_tmp(_n)
@@ -76,6 +75,20 @@ void galois_field::init() {
 		std::cout << _s[3][i] << " ";
 	}
 	std::cout << "\n";
+	_emgcd_tmp_polynomials.resize(20);
+	for (auto& tmp : _emgcd_tmp_polynomials) {
+		for (auto& v : tmp) {
+			v.resize(_n);
+		}
+	}
+
+	_emgcd_tmp_result.resize(20);
+	for (auto& tmp : _emgcd_tmp_result) {
+		for (auto& v : tmp) {
+			v.first.resize(_n);
+			v.second.resize(_n);
+		}
+	}
 
 	_dft_tmp.resize(_m + 1);
 	_idft_tmp.resize(_m + 1);
@@ -167,6 +180,7 @@ unsigned galois_field::multiply(unsigned a, unsigned b) const {
 	return _exp_table[log_sum]; 
 }
 unsigned galois_field::inverse(unsigned a) const {
+	assert(a != 0);
 	if (a == 0) throw std::runtime_error("division by zero");
     return _exp_table[_n - _log_table[a]];
 }
@@ -209,21 +223,33 @@ std::vector<unsigned>& galois_field::fast_poly_division(std::vector<unsigned>& a
 		return a;
 	}
 	auto m = deg_a - deg_b;
-	rev_poly(a, quotient, deg_a);
-	inv_poly(b, _division_tmp, m + 1);
-	rev_poly(_division_tmp, remainder, deg_b);
-	fast_poly_multiplication(quotient, );
+	std::cout << deg_a << " " << deg_b << "\n";
+	std::cout << "ARGS:\n";
+	print_poly(a);
+	print_poly(b);
+	print_poly(_division_tmp);
+	std::cout << "\n";
 
-
-
-	//return rev_poly();
+	rev_poly(b, _division_tmp, deg_b);
+	print_poly(_division_tmp);
+	inv_poly(_division_tmp, remainder, m + 1);
+	print_poly(remainder);
+	std::cout << "here\n";
+	remainder_of_power(fast_poly_multiplication(quotient, remainder, _division_tmp), m + 1);
+	rev_poly(_division_tmp, quotient, m);
+	fast_poly_multiplication(quotient, b, _division_tmp);
+	add_poly(a, _division_tmp, remainder, 0);
+	return quotient;
 }
 
 std::array<std::pair<std::vector<unsigned>, std::vector<unsigned>>, 3>& 
 		galois_field::EMGCD(std::vector<unsigned> const& u0, std::vector<unsigned> const& u1, std::array<std::pair<std::vector<unsigned>, std::vector<unsigned>>, 3>& dst, unsigned tmp_num) {
 	unsigned n = degree(u0);
-
-	if (degree(u1) < n / 2) {
+	print_poly(u0);
+	print_poly(u1);
+	auto deg_u1 = degree(u1);
+	unsigned m = n / 2 + n % 2;
+	if ((deg_u1 == 0 && u1[0] == 0) || deg_u1 < m) {
 		dst[0].first = u0;
 		dst[0].second = u1;
 		dst[1].first[0] = 1;
@@ -236,11 +262,11 @@ std::array<std::pair<std::vector<unsigned>, std::vector<unsigned>>, 3>&
 	// tmp layout:
 	// b0   b1   c0   c1   d    e    q    f    
 	// 0    1    2    3    4    5    6    7  
-	unsigned m = n / 2 + n % 2;
 
 	split_poly(u0,locals[0], locals[2], m);
 	split_poly(u1, locals[1], locals[3], m);
-
+	//print_poly(locals[0]);
+	std::cout << "here "  << tmp_num << " " << n << " " << m << " " << deg_u1 << "\n";
 	// u1w1v1 is stored in _emgcd_tmp_result
 	EMGCD(locals[0], locals[1], _emgcd_tmp_result[tmp_num], tmp_num + 1);
 
@@ -248,32 +274,35 @@ std::array<std::pair<std::vector<unsigned>, std::vector<unsigned>>, 3>&
 	//std::vector<unsigned> d,e;
 	//
 	
+	std::cout << "here1\n";
 	// b0, b1 wont be used further
-	fast_poly_multiplication(result[1].first, locals[2], locals[0]);
+	fast_poly_multiplication(result[1].first, locals[2], locals[4]);
 	fast_poly_multiplication(result[2].first, locals[3], locals[1]);
-	add_poly(locals[0], locals[1], locals[4], 0);
-	swap(locals[0], locals[4]);
-
+	
+	add_poly(locals[4], locals[1], locals[0], 0);
+	//swap(locals[0], locals[4]);
 	add_poly(locals[0], result[0].first, locals[4], m); // d
-
+	print_poly(locals[4]);
 	// in some locals may be litter
-	fast_poly_multiplication(result[1].second, locals[2], locals[0]);
+	fast_poly_multiplication(result[1].second, locals[2], locals[5]);
 	fast_poly_multiplication(result[2].second, locals[3], locals[1]);
-	add_poly(locals[0], locals[1], locals[4], 0);
-	swap(locals[0], locals[5]);
-
+	add_poly(locals[5], locals[1], locals[0], 0);
+	//swap(locals[0], locals[5]);
 	add_poly(locals[0], result[0].second, locals[5], m); // e
+	print_poly(locals[5]);
 
 	unsigned deg_e = degree(locals[5]);
-	if (deg_e < n / 2) {
-		dst[0].first = std::move(locals[4]);
-		dst[0].second = std::move(locals[5]);
+	std::cout << deg_e << " " << m << "\n";
+	if (deg_e < m) {
+		dst[0].first = std::move(locals[0]);
+		dst[0].second = std::move(locals[1]);
 		dst[1].first = std::move(result[1].first);
 		dst[1].second = std::move(result[1].second);
 		dst[2].first = std::move(result[2].first);
 		dst[2].second = std::move(result[2].second);
 		return dst;
 	}
+	std::cout << "here\n";
 
 	// c0 and c1 also can be reused -> g0,g1,h0,h1 will be stored there (in b0,b1,c0,c1)
 
@@ -284,6 +313,18 @@ std::array<std::pair<std::vector<unsigned>, std::vector<unsigned>>, 3>&
 	unsigned k = 2 * m - deg_e;
 	split_poly(locals[5], locals[0], locals[2], k);
 	split_poly(locals[7], locals[1], locals[3], k);
+	std::cout << "g0 ";
+	print_poly(locals[0]);
+	std::cout << "g1 ";
+	print_poly(locals[1]);
+	std::cout << "h0 ";
+	print_poly(locals[2]);
+	std::cout << "h1 ";
+	print_poly(locals[3]);
+	std::cout << "q ";
+	print_poly(locals[6]);
+	std::cout << "f ";
+	print_poly(locals[7]);
 	EMGCD(locals[0], locals[1], _emgcd_tmp_result[tmp_num + 1], tmp_num + 1); // need to be careful with such storage
 
 	std::array<std::pair<std::vector<unsigned>, std::vector<unsigned>>, 3>& result2 = _emgcd_tmp_result[tmp_num + 1];
@@ -291,29 +332,27 @@ std::array<std::pair<std::vector<unsigned>, std::vector<unsigned>>, 3>&
 	// g0, g1 wont be used further
 	
 	// fst part of the answer
-	fast_poly_multiplication(result[1].first, locals[2], locals[0]);
-	fast_poly_multiplication(result[2].first, locals[3], locals[1]);
+	fast_poly_multiplication(result2[1].first, locals[2], locals[0]);
+	fast_poly_multiplication(result2[2].first, locals[3], locals[1]);
 	add_poly(locals[0], locals[1], locals[4], 0);
 	swap(locals[0], locals[4]);
 
-	add_poly(locals[0], result[0].first, locals[4], k); // d
+	add_poly(locals[0], result2[0].first, locals[4], k); // d
 
 	// in some locals may be litter
-	fast_poly_multiplication(result[1].second, locals[2], locals[0]);
-	fast_poly_multiplication(result[2].second, locals[3], locals[1]);
-	add_poly(locals[0], locals[1], locals[4], 0);
+	fast_poly_multiplication(result2[1].second, locals[2], locals[0]);
+	fast_poly_multiplication(result2[2].second, locals[3], locals[1]);
+	add_poly(locals[0], locals[1], locals[5], 0);
 	swap(locals[0], locals[5]);
 
-	add_poly(locals[0], result[0].second, locals[5], k); // e
+	add_poly(locals[0], result2[0].second, locals[5], k); // e
 	// locals [0..3] can be reused
 
-	// multiply matrices (can be optimized)
+	// multiply matrices (may be optimized)
 	fast_poly_multiplication(result[2].first, locals[6], locals[0]);
-	//multipy_poly_by_const(locals[0], _p - 1);
 	add_poly(result[1].first, locals[0], locals[1], 0);
 
 	fast_poly_multiplication(result[2].second, locals[6], locals[0]);
-	//multipy_poly_by_const(locals[0], _p - 1);
 	add_poly(result[1].second, locals[0], locals[2], 0);
 
 	fast_poly_multiplication(result[2].first, result2[1].first, locals[0]);
@@ -465,30 +504,26 @@ std::vector<unsigned>& galois_field::IDFTimpl(std::vector<unsigned>& src, std::v
 void galois_field::split_poly(std::vector<unsigned> const& p, std::vector<unsigned>& dst1, std::vector<unsigned>& dst2, unsigned m) {
 	for (unsigned i = 0; i < p.size(); ++i) {
 		if (i < m) {
-			dst1.push_back(p[i]);
+			dst2[i] = p[i];
 		}
 		else
 		{
-			dst2.push_back(p[i]);
+			dst1[i - m] = p[i];
 		}
 	}
 }
 
 std::vector<unsigned>& galois_field::add_poly(std::vector<unsigned>& a, std::vector<unsigned>& b, std::vector<unsigned>& dst, unsigned m) {
-	for (unsigned i = 0; i < b.size() + m; ++i) {
-		if (i < m && i >= a.size()) {
-			a.push_back(0);
+	for (unsigned i = 0; i < a.size(); ++i) {
+		if (i < m) {
+			dst[i] = a[i];
 		}
-		else if (i >= m) {
-			if (i >= a.size()) {
-				a.push_back(b[i - m]);
-			}
-			else {
-				a.push_back(add(a[i], b[i - m]));
-			}
+		else {
+			dst[i] = add(a[i], b[i - m]);
 		}
+
 	}
-	return a;
+	return dst;
 }
 
 std::vector<unsigned>& galois_field::sub_poly(std::vector<unsigned>& a, std::vector<unsigned>& b, std::vector<unsigned>& dst) {
@@ -515,8 +550,8 @@ std::vector<unsigned>& galois_field::multipy_poly_by_const(std::vector<unsigned>
 }
 
 std::vector<unsigned>& galois_field::rev_poly(std::vector<unsigned>& src, std::vector<unsigned>& dst, unsigned n) {
-	for (unsigned i = 0; i < n; ++i) {
-		dst[n - i - 1] = src[i];
+	for (unsigned i = 0; i < n + 1; ++i) {
+		dst[n - i] = src[i];
 	}
 	return dst;
 }
@@ -530,19 +565,19 @@ void galois_field::print_poly(std::vector<unsigned> const& p) {
 }
 
 std::vector<unsigned> galois_field::inv_poly(std::vector<unsigned>& src, std::vector<unsigned>& dst, unsigned mod) {
-	print_poly(src);
-	std::cout << "--\n";
+	//print_poly(src);
+	//std::cout << "--\n";
 	// make zeros in inverse tmp
 	unsigned g0 = inverse(src[0]);
 	unsigned r = sizeof(unsigned) * 8 - std::countl_zero(mod); // mb bad
 	dst[0] = g0;
 	for (unsigned i = 1; i <= r; ++i) {
 		fast_poly_multiplication(dst, dst, _inverse_temporary1);
-		print_poly(dst);
-		print_poly(_inverse_temporary1);
-		fast_poly_multiplication(src, _inverse_temporary1, dst);
-		print_poly(dst);
-		std::cout << "------\n";
+		//print_poly(dst);
+		//print_poly(_inverse_temporary1);
+		remainder_of_power(fast_poly_multiplication(src, _inverse_temporary1, dst), 1 << r);
+		//print_poly(dst);
+		//std::cout << "------\n";
 
 	}
 

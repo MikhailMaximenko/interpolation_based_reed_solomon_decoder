@@ -41,18 +41,26 @@ int main()
 
 	std::cout << "\n";
 
-	std::vector<unsigned> a{ 2, 3, 0, 0, 0, 0, 0 };
-	/*std::vector<unsigned> b{ 1, 1, 1, 0, 0, 0, 0 };
-	std::vector<unsigned> c(7);
-	gf2.fast_poly_multiplication(a, b, c);*/
-	//for (auto i : gf2._a_tmp) {
-	//	std::cout << i << " ";
-	//}
-	//std::cout << "\n";
-	//for (auto i : gf2._b_tmp) {
-	//	std::cout << i << " ";
-	//}
-	//std::cout << "\n";
+	std::vector<unsigned> a{ 0, 2, 1, 7, 0, 0, 0 };
+	std::vector<unsigned> b{ 0, 2, 3, 0, 0, 0, 0 };
+	
+	std::vector<unsigned> c(7), d(7);
+	std::array<std::pair<std::vector<unsigned>, std::vector<unsigned> >, 3> dst = 
+	{ 
+      {
+	    { {0,0,0,0,0,0,0}, {0,0,0,0,0,0,0} }, 
+		{ {0,0,0,0,0,0,0}, {0,0,0,0,0,0,0} }, 
+		{ {0,0,0,0,0,0,0}, {0,0,0,0,0,0,0} }
+	  }
+	};
+	std::cout << "calling emgcd\n";
+	gf2.EMGCD(a, b, dst, 0);
+	for (auto v : dst) {
+		gf2.print_poly(v.first);
+	}
+	for (auto v : dst) {
+		gf2.print_poly(v.second);
+	}
 	//call_fft(gf2._b_tmp, gf2._a_tmp);
 	//for (auto i : gf2._a_tmp) {
 		//std::cout << i << " ";
@@ -163,7 +171,7 @@ int main()
 		std::cout << i << " ";
 	}
 	std::cout << "\n";*/
-	std::vector<unsigned> a_inv(7), kk(7);
+	/*std::vector<unsigned> a_inv(7), kk(7);
 	gf2.inv_poly(a, a_inv, 7);
 
 	gf2.fast_poly_multiplication(a, a_inv, kk);
@@ -175,7 +183,7 @@ int main()
 		std::cout << v << " ";
 	}
 	std::cout << "\n";
-	
+	*/
 
 
 	//std::vector<unsigned> a_inv(7), kk(7);
