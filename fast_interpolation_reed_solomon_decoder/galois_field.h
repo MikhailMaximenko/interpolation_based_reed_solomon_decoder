@@ -82,6 +82,7 @@ public:
 	std::vector<unsigned> _b_tmp;
 	std::vector<unsigned> _inverse_temporary1;
 	std::vector<unsigned> _inverse_temporary2;
+	std::vector<unsigned> _division_tmp;
 	std::vector<unsigned> _const2;
 
 	std::vector<std::array<std::pair<std::vector<unsigned>, std::vector<unsigned>>, 3>> _emgcd_tmp_result;

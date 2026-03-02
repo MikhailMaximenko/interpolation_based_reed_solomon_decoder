@@ -201,14 +201,18 @@ std::vector<unsigned>& galois_field::fast_poly_multiplication(std::vector<unsign
 }
 
 std::vector<unsigned>& galois_field::fast_poly_division(std::vector<unsigned>& a, std::vector<unsigned>& b, std::vector<unsigned>& quotient, std::vector<unsigned>& remainder) {
-	if (a.size() < b.size()) {
+	auto deg_a = degree(a), deg_b = degree(b);
+	if (deg_a < deg_b) {
 		std::copy(a.begin(), a.end(), remainder.begin());
 		std::fill(quotient.begin(), quotient.end(), 0);
 
 		return a;
 	}
-	rev_poly(a, quotient, degree(a));
-	inv_poly(b, _division_tmp, _n);
+	auto m = deg_a - deg_b;
+	rev_poly(a, quotient, deg_a);
+	inv_poly(b, _division_tmp, m + 1);
+	rev_poly(_division_tmp, remainder, deg_b);
+	fast_poly_multiplication(quotient, );
 
 
 
