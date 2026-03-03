@@ -2,7 +2,7 @@
 #include <cstddef>
 #include<vector>
 #include<array>
-
+#include <algorithm>
 
 struct galois_field
 {

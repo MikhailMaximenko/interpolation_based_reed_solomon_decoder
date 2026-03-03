@@ -40,9 +40,16 @@ int main()
 	}
 
 	std::cout << "\n";
+	//std::vector<unsigned> m1 = { 3, 2, 0, 0, 0, 0, 0 }, m2 = { 6, 4, 1, 7, 3, 2, 5 }, m3 = { 0,0,0,0,0,0,0 };
 
-	std::vector<unsigned> a{ 0, 2, 1, 7, 0, 0, 0 };
-	std::vector<unsigned> b{ 0, 2, 3, 0, 0, 0, 0 };
+	//gf2.fast_poly_multiplication(m1, m2, m3);
+	//gf2.print_poly(m3);
+
+	//gf2.inv_poly(m1, m3, 7);
+	//gf2.print_poly(m3);
+
+	std::vector<unsigned> a{ 4, 3, 2, 7, 2, 3, 5 };
+	std::vector<unsigned> b{ 6, 2, 3, 3, 2, 4, 0 };
 	
 	std::vector<unsigned> c(7), d(7);
 	std::array<std::pair<std::vector<unsigned>, std::vector<unsigned> >, 3> dst = 
