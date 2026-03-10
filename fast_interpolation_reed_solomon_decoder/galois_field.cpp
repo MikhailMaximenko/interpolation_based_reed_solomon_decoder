@@ -105,6 +105,22 @@ void galois_field::init() {
 		}
 	}
 
+	for (auto& v : _ad_tmp_polinomyals) {
+		v.resize(_n);
+	}
+	for (auto& tmp : _ad_tmp_emgcd_results) {
+		for (auto& v : tmp) {
+			v.first.resize(_n);
+			v.second.resize(_n);
+		}
+	}
+	for (auto& tmp : _solve_toeplitz_tmp) {
+		//for (auto& v : tmp) {
+		tmp.resize(_n);
+			//v.second.resize(_n);
+		//}
+	}
+
 	std::cout << "initted\n";
 }
 
@@ -251,9 +267,9 @@ std::vector<unsigned>& galois_field::fast_poly_division(std::vector<unsigned>& a
 std::array<std::pair<std::vector<unsigned>, std::vector<unsigned>>, 3>& 
 		galois_field::EMGCD(std::vector<unsigned> const& u0, std::vector<unsigned> const& u1, std::array<std::pair<std::vector<unsigned>, std::vector<unsigned>>, 3>& dst, unsigned tmp_num) {
 	unsigned n = degree(u0);
-	std::cout << "enetring emgcd with args:\n";
-	print_poly(u0);
-	print_poly(u1);
+	//std::cout << "enetring emgcd with args:\n";
+	//print_poly(u0);
+	//print_poly(u1);
 	auto deg_u1 = degree(u1);
 	unsigned m = n / 2 + n % 2;
 	if ((deg_u1 == 0 && u1[0] == 0) || deg_u1 < m) {
@@ -273,7 +289,7 @@ std::array<std::pair<std::vector<unsigned>, std::vector<unsigned>>, 3>&
 	split_poly(u0,locals[0], locals[2], m);
 	split_poly(u1, locals[1], locals[3], m);
 	//print_poly(locals[0]);
-	std::cout << "here "  << tmp_num << " " << n << " " << m << " " << deg_u1 << "\n";
+	//std::cout << "here "  << tmp_num << " " << n << " " << m << " " << deg_u1 << "\n";
 	// u1w1v1 is stored in _emgcd_tmp_result
 	EMGCD(locals[0], locals[1], _emgcd_tmp_result[tmp_num], tmp_num + 1);
 
@@ -299,7 +315,7 @@ std::array<std::pair<std::vector<unsigned>, std::vector<unsigned>>, 3>&
 	print_poly(locals[5]);
 
 	unsigned deg_e = degree(locals[5]);
-	std::cout << deg_e << " " << m << "\n";
+	//std::cout << deg_e << " " << m << "\n";
 	if (deg_e < m) {
 		dst[0].first = std::move(locals[0]);
 		dst[0].second = std::move(locals[1]);
@@ -309,7 +325,7 @@ std::array<std::pair<std::vector<unsigned>, std::vector<unsigned>>, 3>&
 		dst[2].second = std::move(result[2].second);
 		return dst;
 	}
-	std::cout << "here\n";
+	//std::cout << "here\n";
 
 	// c0 and c1 also can be reused -> g0,g1,h0,h1 will be stored there (in b0,b1,c0,c1)
 
@@ -381,11 +397,14 @@ void galois_field::AD(std::vector<unsigned>& a, unsigned n, std::vector<unsigned
 	if (degree(_ad_tmp_emgcd_results[0][0].second) < n) {
 		throw std::runtime_error("singular");
 	}
+	std::cout << "here\n";
 	if (_ad_tmp_emgcd_results[0][2].second[0] != 0) {
+		std::cout << "here\n";
 		rev_poly(_ad_tmp_polinomyals[1], _ad_tmp_polinomyals[2], 2 * n);
-		EMGCD(_ad_tmp_polinomyals[0], _ad_tmp_polinomyals[2], _ad_tmp_emgcd_results[2], 0);
-		dst1 = multipy_poly_by_const(_ad_tmp_emgcd_results[0][3].second, inverse(_ad_tmp_emgcd_results[0][0].second[degree(_ad_tmp_emgcd_results[0][0].second)]));
-		dst2 = multipy_poly_by_const(_ad_tmp_emgcd_results[1][3].second, inverse(_ad_tmp_emgcd_results[1][0].second[degree(_ad_tmp_emgcd_results[1][0].second)]));
+		std::cout << "here1\n";
+		EMGCD(_ad_tmp_polinomyals[0], _ad_tmp_polinomyals[2], _ad_tmp_emgcd_results[1], 0);
+		dst1 = multipy_poly_by_const(_ad_tmp_emgcd_results[0][2].second, inverse(_ad_tmp_emgcd_results[0][0].second[degree(_ad_tmp_emgcd_results[0][0].second)]));
+		dst2 = multipy_poly_by_const(_ad_tmp_emgcd_results[1][2].second, inverse(_ad_tmp_emgcd_results[1][0].second[degree(_ad_tmp_emgcd_results[1][0].second)]));
 		return;
 	}
 	_ad_tmp_polinomyals[0][2 * n + 1] = 0;

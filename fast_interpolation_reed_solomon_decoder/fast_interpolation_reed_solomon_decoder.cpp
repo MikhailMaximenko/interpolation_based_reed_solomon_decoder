@@ -48,11 +48,13 @@ int main()
 	//gf2.inv_poly(m1, m3, 7);
 	//gf2.print_poly(m3);
 
-	std::vector<unsigned> a{ 4, 3, 2, 7, 2, 3, 5 };
+	std::vector<unsigned> a{ 7, 6, 1, 0, 0, 0, 0 };
 	std::vector<unsigned> b{ 6, 2, 3, 3, 2, 4, 0 };
 	
 	std::vector<unsigned> c(7), d(7);
-	std::array<std::pair<std::vector<unsigned>, std::vector<unsigned> >, 3> dst = 
+	gf2.AD(a, 1, c, d);
+
+	/*std::array<std::pair<std::vector<unsigned>, std::vector<unsigned> >, 3> dst = 
 	{ 
       {
 	    { {0,0,0,0,0,0,0}, {0,0,0,0,0,0,0} }, 
@@ -62,12 +64,10 @@ int main()
 	};
 	std::cout << "calling emgcd\n";
 	gf2.EMGCD(a, b, dst, 0);
-	for (auto v : dst) {
-		gf2.print_poly(v.first);
-	}
-	for (auto v : dst) {
-		gf2.print_poly(v.second);
-	}
+	*/
+	gf2.print_poly(c);
+	gf2.print_poly(d);
+
 	//call_fft(gf2._b_tmp, gf2._a_tmp);
 	//for (auto i : gf2._a_tmp) {
 		//std::cout << i << " ";
