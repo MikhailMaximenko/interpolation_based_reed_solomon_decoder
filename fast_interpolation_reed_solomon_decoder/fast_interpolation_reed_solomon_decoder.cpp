@@ -40,7 +40,24 @@ int main()
 	}
 
 	std::cout << "\n";
-	//std::vector<unsigned> m1 = { 3, 2, 0, 0, 0, 0, 0 }, m2 = { 6, 4, 1, 7, 3, 2, 5 }, m3 = { 0,0,0,0,0,0,0 };
+	std::vector<unsigned> m1 = { 3, 2, 0, 0, 0, 0, 0, 0 }, m2 = { 1, 1, 0, 0, 0, 0, 0, 0 }, m3 = { 0,0,0,0,0,0,0,0}, m4 = { 0,0,0,0,0,0,0,0}, m5 = { 0,0,0,0,0,0,0,0 }, m6 = { 0,0,0,0,0,0,0,0 };
+	gf2.DFT(m1, m3, 8, 0);
+	gf2.DFT(m2, m4, 8, 0);
+	for (size_t i = 0; i < 8; ++i) {
+		m5[i] = gf2.multiply(m3[i], m4[i]);
+	}
+
+	gf2.print_poly(m3);
+	gf2.print_poly(m4);
+	gf2.print_poly(m5);
+	gf2.IDFT(m5, m6, 8, 0);
+	//gf2.multipy_poly_by_const(m6, 3);
+	for (auto v : m6) {
+		std::cout << v << " ";
+	}
+	std::cout << "\n";
+
+
 
 	//gf2.fast_poly_multiplication(m1, m2, m3);
 	//gf2.print_poly(m3);
@@ -48,25 +65,32 @@ int main()
 	//gf2.inv_poly(m1, m3, 7);
 	//gf2.print_poly(m3);
 
-	std::vector<unsigned> a{ 7, 6, 1, 0, 0, 0, 0 };
-	std::vector<unsigned> b{ 6, 2, 3, 3, 2, 4, 0 };
-	
-	std::vector<unsigned> c(7), d(7);
-	gf2.AD(a, 1, c, d);
+	/*std::vector<unsigned> a{ 1, 0, 0, 1, 0, 0, 0, 0 };
+	std::vector<unsigned> b{ 0, 1, 0, 0, 0, 0, 0, 0 };
+	std::vector<unsigned> e{ 0, 0, 0, 0, 0, 0, 0, 0 };*/
+	//std::vector<unsigned> f{ 0, 0, 0, 0, 0, 0, 0, 1 };
+	//
+	//std::vector<unsigned> c(8), d(8);
+	//gf2.SOLVE_TOEPITZ(a, b, 2, c);
+	///*gf2.AD(a, 2, c, d);
+	//gf2.print_poly(d);*/
+	//gf2.print_poly(c);
 
+	//std::cout << "!\n";
 	/*std::array<std::pair<std::vector<unsigned>, std::vector<unsigned> >, 3> dst = 
 	{ 
       {
-	    { {0,0,0,0,0,0,0}, {0,0,0,0,0,0,0} }, 
-		{ {0,0,0,0,0,0,0}, {0,0,0,0,0,0,0} }, 
-		{ {0,0,0,0,0,0,0}, {0,0,0,0,0,0,0} }
+	    { {0,0,0,0,0,0,0,0}, {0,0,0,0,0,0,0,0} }, 
+		{ {0,0,0,0,0,0,0,0}, {0,0,0,0,0,0,0,0} }, 
+		{ {0,0,0,0,0,0,0,0}, {0,0,0,0,0,0,0,0} }
 	  }
 	};
 	std::cout << "calling emgcd\n";
-	gf2.EMGCD(a, b, dst, 0);
-	*/
-	gf2.print_poly(c);
-	gf2.print_poly(d);
+	gf2.EMGCD(f, e, dst, 0);
+	for (auto& v : dst) {
+		gf2.print_poly(v.first);
+		gf2.print_poly(v.second);
+	}*/
 
 	//call_fft(gf2._b_tmp, gf2._a_tmp);
 	//for (auto i : gf2._a_tmp) {
