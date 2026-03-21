@@ -53,6 +53,8 @@ struct galois_field
 	std::vector<unsigned>& add_poly(std::vector<unsigned>&, std::vector<unsigned>&, std::vector<unsigned>&, unsigned);
 	std::vector<unsigned>& sub_poly(std::vector<unsigned>&, std::vector<unsigned>&, std::vector<unsigned>&);
 
+	std::vector<unsigned>& SCHONHAGE_STRASSEN_FFT(std::vector<unsigned>&, std::vector<unsigned>&, unsigned);
+
 public:
 	void init();
 

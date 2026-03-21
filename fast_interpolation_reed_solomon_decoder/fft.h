@@ -10,8 +10,8 @@ void FFT511(unsigned*, unsigned*);
 
 
 void inline call_fft(std::vector<unsigned>& src, std::vector<unsigned>& dst) {
-	if (src.size() <= 7) {
-		FFT7(src.data(), dst.data());
+	if (src.size() <=64) {
+		FFT63(src.data(), dst.data());
 		return;
 	}
 	//if (src.size() <= 63) {

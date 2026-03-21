@@ -6,40 +6,142 @@
 #include "fft.h"
 #include <bit>
 
+InterpolationBasedFastRSDecoder::InterpolationBasedFastRSDecoder(galois_field const& gf, unsigned n, unsigned k) 
+	: _gf(gf)
+	, _n(n)
+	, _k(k)
+	, _t((n - k) / 2)
+{
+	for (auto& v : _tmp) {
+		v.resize(_n + 1);
+	}
+}
+
+
+std::vector<unsigned> InterpolationBasedFastRSDecoder::encode(std::vector<unsigned> & m) {
+	std::vector<unsigned> res(_n);
+	_gf.DFT(m, res);
+	return res;
+}
 
 
 void InterpolationBasedFastRSDecoder::decode(std::vector<unsigned>& cw) {
-	_gf.IDFT(cw, _tmp[0]);
-	_tmp[1].insert(_tmp[1].begin(), _tmp[0].rbegin(), _tmp[0].rend() + (_n - 2 * _t));
-	_tmp[2].insert(_tmp[2].begin(), _tmp[0].rbegin() - _t, _tmp[0].rend() + (_n - 2 * _t - 1)); // n - 2 * t + 1 ..n - t
-	_gf.SOLVE_TOEPITZ(_tmp[1], _tmp[2], _t, _tmp[3]);
-	for (ptrdiff_t i = _k - 1; i >= 0; --i) {
-		_tmp[0][i] = 0;
-		for (size_t j = 0; j < _t; ++j) {
-			_tmp[0][i] = _gf.add(_tmp[0][i], _gf.multiply(_tmp[0][i + j], _tmp[3][j]));
+	//_gf.print_poly(cw);
+	//_gf.print_poly(_tmp[0]);
+	//_t = 0;
+	if (_t != 0) {
+		for (auto& tmp : _tmp) {
+			std::fill(tmp.begin(), tmp.end(), 0);
 		}
+		_gf.IDFT(cw, _tmp[0]);
+		std::copy(_tmp[0].begin() + _n - 2 * _t + 1, _tmp[0].begin() + _n, _tmp[1].begin());
+		std::copy(_tmp[0].begin() + _n - 2 * _t, _tmp[0].begin() + _n - _t, _tmp[2].begin());
+		//std::copy(_tmp[1].begin(), _tmp[1].begin() + 2 * _t - 1, _tmp[0].rbegin());
+		//std::copy(_tmp[2].begin(), _tmp[2].begin() + _t, _tmp[0].begin() + _n - 2 * _t);
+		//std::cout << _t << " initial system:\n";
+		//_gf.print_poly(_tmp[1]);
+		//_gf.print_poly(_tmp[2]);
+		//_tmp[1].insert(_tmp[1].begin(), _tmp[0].rbegin(), _tmp[0].rend() - (_n - 2 * _t));
+		//_tmp[2].insert(_tmp[2].begin(), _tmp[0].rbegin() - _t, _tmp[0].rend() - (_n - 2 * _t - 1)); // n - 2 * t + 1 ..n - t
+		_gf.SOLVE_TOEPITZ(_tmp[1], _tmp[2], _t - 1, _tmp[3]);
+		//std::cout << "solutions:\n";
+		//_gf.print_poly(_tmp[3]);
+
+		for (ptrdiff_t i = _k - 1; i >= 0; --i) {
+			_tmp[0][i] = 0;
+			for (size_t j = 1; j <= _t; ++j) {
+				_tmp[0][i] = _gf.add(_tmp[0][i], _gf.multiply(_tmp[0][i + j], _tmp[3][_t - j]));
+			}
+			//std::cout << _tmp[0][i] << " ";
+		}
+		//std::cout << "\n";
+		//_gf.print_poly(_tmp[0]);
+
+		using std::swap;
+		swap(cw, _tmp[1]);
+		//_gf.print_poly(_tmp[0]);
+		_gf.DFT(_tmp[0], _tmp[2]);
+		//_gf.IDFT(_tmp[2], _tmp[0]);
+		//_gf.print_poly(_tmp[0]);
+		_gf.sub_poly(_tmp[1], _tmp[2], cw);
+		//_gf.print_poly(cw);
 	}
 
-	using std::swap;
-	swap(cw, _tmp[1]);
-	_gf.sub_poly(_tmp[1], _gf.DFT(_tmp[0], _tmp[2]), cw);
+	
+
+}
+
+std::random_device rd;
+std::mt19937 gen(rd());
+
+
+std::vector<unsigned> generate_message(unsigned n, unsigned k) {
+	std::vector<unsigned> msg(n);
+	std::uniform_int_distribution<unsigned> distr(0, n);
+	std::generate_n(msg.begin(), k, [&]() { return distr(gen); });
+	return msg;
+}
+
+std::vector<unsigned> generate_errors(unsigned n, unsigned t) {
+	std::vector<unsigned> errors(n);
+	std::uniform_int_distribution<unsigned> distr(1, n);
+	std::generate_n(errors.begin(), t, [&]() { return distr(gen); });
+	std::shuffle(errors.begin(), errors.end(), gen);
+	return errors;
+}
+
+
+
+void test_decoder(galois_field & gf, unsigned n, unsigned k, unsigned iters) {
+	InterpolationBasedFastRSDecoder decoder(gf, n, k);
+	for (size_t t = 0; t <= (n - k) / 2; ++t) {
+		decoder._t = t;
+		for (size_t _ = 0; _ < iters; ++_) {
+			//std::cout << "here\n";
+			auto msg = generate_message(n, k);
+			auto encoded = decoder.encode(msg);
+			auto errors = generate_errors(n, t);
+			std::vector<unsigned> msg_with_errors(n + 1);
+			gf.add_poly(encoded, errors, msg_with_errors, 0);
+			//gf.print_poly(msg_with_errors);
+			decoder.decode(msg_with_errors);
+			for (size_t i = 0; i < n; ++i) {
+				if (encoded[i] != msg_with_errors[i]) {
+					std::cout << "decoding error occured with t:"<< t << "\n";
+					gf.print_poly(msg);
+					gf.print_poly(encoded);
+					gf.print_poly(errors);
+					gf.print_poly(msg_with_errors);
+					return;
+				}
+			}
+		}
+	}
+	std::cout << "tests passed\n";
 
 
 }
 
 int main()
 {
-	galois_field gf2(3, 0xb, 3);
-	std::cout << "here\n";
-	for (size_t i = 0; i < (1 << 3); ++i) {
+	galois_field gf2(6, 0x43, 6);
+	/*std::vector <unsigned> a1{0, 2, 4, 0, 0, 0, 0, 0};
+	std::vector <unsigned> b1{ 4, 0, 0, 0, 0, 0, 0, 0 };
+	std::vector<unsigned> ds{ 0, 0, 0, 0, 0, 0, 0, 0 };
+	gf2.SOLVE_TOEPITZ(a1, b1, 1, ds);
+	gf2.print_poly(ds);*/
+	/*
+	std::cout << "here\n";*/
+	for (size_t i = 0; i < (1 << 6); ++i) {
 		std::cout << gf2._exp_table[i] << " ";
 	}
 	std::cout << "\n";
-	for (size_t i = 0; i < (1 << 3); ++i) {
+	for (size_t i = 0; i < (1 << 6); ++i) {
 		std::cout << gf2._log_table[i] << " ";
 	}
 
 	std::cout << "\n";
+	/*
 	std::vector<unsigned> m1 = { 3, 2, 0, 0, 0, 0, 0, 0 }, m2 = { 1, 1, 0, 0, 0, 0, 0, 0 }, m3 = { 0,0,0,0,0,0,0,0}, m4 = { 0,0,0,0,0,0,0,0}, m5 = { 0,0,0,0,0,0,0,0 }, m6 = { 0,0,0,0,0,0,0,0 };
 	gf2.DFT(m1, m3, 8, 0);
 	gf2.DFT(m2, m4, 8, 0);
@@ -50,12 +152,12 @@ int main()
 	gf2.print_poly(m3);
 	gf2.print_poly(m4);
 	gf2.print_poly(m5);
-	gf2.IDFT(m5, m6, 8, 0);
+	gf2.IDFT(m5, m6, 8, 0);*/
 	//gf2.multipy_poly_by_const(m6, 3);
-	for (auto v : m6) {
+	/*for (auto v : m6) {
 		std::cout << v << " ";
 	}
-	std::cout << "\n";
+	std::cout << "\n";*/
 
 
 
@@ -66,17 +168,17 @@ int main()
 	//gf2.print_poly(m3);
 
 	/*std::vector<unsigned> a{ 1, 0, 0, 1, 0, 0, 0, 0 };
-	std::vector<unsigned> b{ 0, 1, 0, 0, 0, 0, 0, 0 };
-	std::vector<unsigned> e{ 0, 0, 0, 0, 0, 0, 0, 0 };*/
-	//std::vector<unsigned> f{ 0, 0, 0, 0, 0, 0, 0, 1 };
-	//
-	//std::vector<unsigned> c(8), d(8);
-	//gf2.SOLVE_TOEPITZ(a, b, 2, c);
-	///*gf2.AD(a, 2, c, d);
-	//gf2.print_poly(d);*/
-	//gf2.print_poly(c);
+	std::vector<unsigned> b{ 0, 1, 0, 0, 0, 0, 0, 0 };*/
+	//std::vector<unsigned> e{ 3, 6, 1, 0, 0, 0, 0, 0 };
+	//std::vector<unsigned> f{ 0, 0, 0, 1, 0, 0, 0, 0 };
+	////
+	////std::vector<unsigned> c(8), d(8);
+	////gf2.SOLVE_TOEPITZ(a, b, 2, c);
+	/////*gf2.AD(a, 2, c, d);
+	////gf2.print_poly(d);*/
+	////gf2.print_poly(c);
 
-	//std::cout << "!\n";
+	////std::cout << "!\n";
 	/*std::array<std::pair<std::vector<unsigned>, std::vector<unsigned> >, 3> dst = 
 	{ 
       {
@@ -238,6 +340,21 @@ int main()
 	//gf2.fast_poly_multiplication(aaa, bbb, ccc);
 	//gf2.print_poly(ccc);
 
+	//std::vector<unsigned> m = {1,2,3,0,0,0,0,0};
+	//InterpolationBasedFastRSDecoder decoder(gf2, 7, 3);
+	//auto a = decoder.encode(m);
+	//gf2.print_poly(a);
+	//std::cout << "\n";
+	//a[3] += 1;
+	//a[5] = 2;
+	////a[0] += 2;
+	//decoder.decode(a);
+	//gf2.print_poly(a);
+	//gf2.IDFT(a, m);
+	//gf2.print_poly(m);
+	//std::cout << "\n";
+
+	test_decoder(gf2, 63, 5, 10);
 
 	return 0;
 }
