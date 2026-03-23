@@ -89,6 +89,7 @@ public:
 	std::vector<unsigned> _const2;
 
 	std::vector<std::array<std::pair<std::vector<unsigned>, std::vector<unsigned>>, 3>> _emgcd_tmp_result;
+	std::vector<std::array<std::pair<std::vector<unsigned>, std::vector<unsigned>>, 3>> _emgcd_tmp_result2;
 	std::vector<std::array<std::vector<unsigned>, 8>> _emgcd_tmp_polynomials;
 
 	std::array<std::array<std::pair<std::vector<unsigned>, std::vector<unsigned>>, 3>, 2> _ad_tmp_emgcd_results;
