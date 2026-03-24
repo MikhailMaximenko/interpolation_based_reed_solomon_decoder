@@ -6,7 +6,7 @@
 #include "fft.h"
 #include <bit>
 
-InterpolationBasedFastRSDecoder::InterpolationBasedFastRSDecoder(galois_field const& gf, unsigned n, unsigned k) 
+InterpolationBasedFastRSDecoder::InterpolationBasedFastRSDecoder(galois_field const& gf, unsigned n, unsigned k)
 	: _gf(gf)
 	, _n(n)
 	, _k(k)
@@ -38,26 +38,26 @@ void InterpolationBasedFastRSDecoder::decode(std::vector<unsigned>& cw) {
 		std::copy(_tmp[0].begin() + _n - 2 * _t, _tmp[0].begin() + _n - _t, _tmp[2].begin());
 		//std::copy(_tmp[1].begin(), _tmp[1].begin() + 2 * _t - 1, _tmp[0].rbegin());
 		//std::copy(_tmp[2].begin(), _tmp[2].begin() + _t, _tmp[0].begin() + _n - 2 * _t);
-		std::cout << _t << " initial system:\n";
+		//std::cout << _t << " initial system:\n";
 		for (auto& v : _tmp[1]) {
-			std::cout << _gf._log_table[v] << " ";
+			//std::cout << _gf._log_table[v] << " ";
 		}
-		std::cout << "\n";
+		//std::cout << "\n";
 		for (auto& v : _tmp[2]) {
-			std::cout << _gf._log_table[v] << " ";
+			//std::cout << _gf._log_table[v] << " ";
 		}
-		std::cout << "\n";
-		_gf.print_poly(_tmp[1]);
-		_gf.print_poly(_tmp[2]);
+		//std::cout << "\n";
+		//_gf.print_poly(_tmp[1]);
+		//_gf.print_poly(_tmp[2]);
 		//_tmp[1].insert(_tmp[1].begin(), _tmp[0].rbegin(), _tmp[0].rend() - (_n - 2 * _t));
 		//_tmp[2].insert(_tmp[2].begin(), _tmp[0].rbegin() - _t, _tmp[0].rend() - (_n - 2 * _t - 1)); // n - 2 * t + 1 ..n - t
 		_gf.SOLVE_TOEPITZ(_tmp[1], _tmp[2], _t - 1, _tmp[3]);
-		std::cout << "solutions:\n";
-		_gf.print_poly(_tmp[3]);
+		//std::cout << "solutions:\n";
+		//_gf.print_poly(_tmp[3]);
 		for (auto& v : _tmp[3]) {
-			std::cout << _gf._log_table[v] << " ";
+			//std::cout << _gf._log_table[v] << " ";
 		}
-		std::cout << "\n";
+		//std::cout << "\n";
 
 		for (ptrdiff_t i = _k - 1; i >= 0; --i) {
 			_tmp[0][i] = 0;
@@ -79,7 +79,7 @@ void InterpolationBasedFastRSDecoder::decode(std::vector<unsigned>& cw) {
 		//_gf.print_poly(cw);
 	}
 
-	
+
 
 }
 
@@ -106,7 +106,8 @@ std::vector<unsigned> generate_errors(unsigned n, unsigned t) {
 
 void test_decoder(galois_field & gf, unsigned n, unsigned k, unsigned iters) {
 	InterpolationBasedFastRSDecoder decoder(gf, n, k);
-	for (size_t t = 4; t <= (n - k) / 2; ++t) {
+	for (size_t t = 0; t <= (n - k) / 2; ++t) {
+		std::cout << "testing t: " << t << "\n";
 		decoder._t = t;
 		for (size_t _ = 0; _ < iters; ++_) {
 			//std::cout << "here\n";
@@ -136,7 +137,7 @@ void test_decoder(galois_field & gf, unsigned n, unsigned k, unsigned iters) {
 
 int main()
 {
-	galois_field gf2(6, 0x43, 6);
+	galois_field gf2(7, 0x83, 7);
 	/*std::vector <unsigned> a1{0, 2, 4, 0, 0, 0, 0, 0};
 	std::vector <unsigned> b1{ 4, 0, 0, 0, 0, 0, 0, 0 };
 	std::vector<unsigned> ds{ 0, 0, 0, 0, 0, 0, 0, 0 };
@@ -191,11 +192,11 @@ int main()
 	////gf2.print_poly(c);
 
 	////std::cout << "!\n";
-	/*std::array<std::pair<std::vector<unsigned>, std::vector<unsigned> >, 3> dst = 
-	{ 
-      {
-	    { {0,0,0,0,0,0,0,0}, {0,0,0,0,0,0,0,0} }, 
-		{ {0,0,0,0,0,0,0,0}, {0,0,0,0,0,0,0,0} }, 
+	/*std::array<std::pair<std::vector<unsigned>, std::vector<unsigned> >, 3> dst =
+	{
+	  {
+		{ {0,0,0,0,0,0,0,0}, {0,0,0,0,0,0,0,0} },
+		{ {0,0,0,0,0,0,0,0}, {0,0,0,0,0,0,0,0} },
 		{ {0,0,0,0,0,0,0,0}, {0,0,0,0,0,0,0,0} }
 	  }
 	};
@@ -360,14 +361,14 @@ int main()
 	auto c = a;
 	auto d = c;
 	auto f = c;
-	auto dst = gf2._emgcd_tmp_result[0];
-	a[0] = 59;
-	a[1] = 53;
-	a[2] = 52;
-	a[3] = 39;
-	a[4] = 57;
-	a[5] = 45;
-	a[6] = 53;
+	auto dst = gf2._emgcd_tmp_result[0]; //42 25 56 42 8 48 10
+	a[0] = 42;
+	a[1] = 25;
+	a[2] = 56;
+	a[3] = 42;
+	a[4] = 8;
+	a[5] = 48;
+	a[6] = 10;
 	gf2.shift_poly(a);
 	a[8] = 1;
 	a[0] = 1;
@@ -386,11 +387,11 @@ int main()
 	////gf2.print_poly(c);
 	////gf2.print_poly(d);
 	//std::cout << "-----\n";
-	//gf2.EMGCD(e, a, dst, 0);
-	//for (auto& v : dst) {
-	//	gf2.print_poly(v.first);
-	//	gf2.print_poly(v.second);
-	//}
+	/*gf2.EMGCD(e, a, dst, 0);
+	for (auto& v : dst) {
+		gf2.print_poly(v.first);
+		gf2.print_poly(v.second);
+	}*/
 	//std::cout << "-----\n";
 	//gf2.rev_poly(a,f,8);
 	//////gf2.print_poly(f);
@@ -406,18 +407,18 @@ int main()
 	//	gf2.print_poly(v.second);
 	//}
 
-	test_decoder(gf2, 63, 11, 100);
+	test_decoder(gf2, 127, 11, 15);
 	return 0;
 }
-//21 22 50 47 60 44 22 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-//55 21 22 50 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-//59 53 52 39 57 45 53 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-//46 59 53 52 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+//53 45 29 53 3 10 13 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+//23 53 45 29 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+//42 25 56 42 8 48 10 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+//41 42 25 56 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
 //solutions :
-//59 30 29 22 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-//21 19 41 36 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+//43 44 33 20 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+//51 37 62 14 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
 //decoding error occured with t : 4
-//49 38 19 63 51 29 3 45 26 45 36 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-//40 1 35 38 63 49 12 1 36 61 58 54 25 8 7 24 44 53 49 62 51 37 38 38 32 44 36 34 15 25 18 17 44 35 34 26 33 46 23 6 54 5 45 8 24 58 49 5 36 12 47 51 60 9 1 15 35 31 19 52 17 21 35
-//0 0 59 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 17 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 63 0 0 0 0 0 0 0 0 34 0 0 0 0 0 0 0
-//63 21 40 16 27 57 36 63 51 10 50 19 58 34 51 16 18 20 31 16 34 46 52 15 60 43 19 26 3 28 30 31 16 60 41 55 48 37 30 51 46 41 26 23 20 34 11 54 26 45 10 51 27 19 40 25 24 52 60 34 25 4 44 0
+//4 27 13 6 53 8 37 21 19 14 20 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+//16 58 6 9 30 58 9 9 46 59 1 1 9 23 11 2 12 23 29 56 35 48 43 45 1 22 22 53 53 19 41 9 28 4 44 54 9 2 55 27 44 6 9 31 11 18 61 52 5 26 25 30 43 19 9 48 56 51 63 10 56 20 28
+//0 40 0 0 0 0 0 62 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 57 0 0 0 0 0 0 0 36 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+//41 27 12 20 55 55 17 53 16 12 27 41 13 5 35 14 15 14 48 61 21 56 2 47 58 13 29 55 3 12 2 48 18 29 48 13 40 35 29 35 27 28 48 21 39 36 4 61 6 18 46 9 52 60 63 20 26 58 47 34 57 24 63 0

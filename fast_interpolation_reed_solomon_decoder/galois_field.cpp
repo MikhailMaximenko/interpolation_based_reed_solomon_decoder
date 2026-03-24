@@ -283,7 +283,7 @@ std::array<std::pair<std::vector<unsigned>, std::vector<unsigned>>, 3>&
 	unsigned m = n / 2 + n % 2;
 
 	if ((deg_u1 == 0 && u1[0] == 0) || deg_u1 < m) {
-		std::cout << tmp_num << " here\n";
+		//std::cout << tmp_num << " here\n";
 		dst[0].first = u0;
 		dst[0].second = u1;
 		std::fill(dst[1].first.begin(), dst[1].first.end(), 0);
@@ -338,7 +338,7 @@ std::array<std::pair<std::vector<unsigned>, std::vector<unsigned>>, 3>&
 	unsigned deg_e = degree(locals[5]);
 	//std::cout << deg_e << " " << m << "\n";
 	if (deg_e < m) {
-		std::cout << "HEREEEE\n";
+		//std::cout << "HEREEEE\n";
 		dst[0].first = locals[4];
 		dst[0].second = locals[5];
 		dst[1].first = result[1].first;
@@ -361,9 +361,19 @@ std::array<std::pair<std::vector<unsigned>, std::vector<unsigned>>, 3>&
 	EMGCD(locals[0], locals[1], _emgcd_tmp_result2[tmp_num], tmp_num+1); // need to be careful with such storage
 
 	std::array<std::pair<std::vector<unsigned>, std::vector<unsigned>>, 3>& result2 = _emgcd_tmp_result2[tmp_num];
-	
-	// g0, g1 wont be used further
-	
+	//for (auto& v : result) {
+	//	print_poly(v.first);
+	//	print_poly(v.second);
+	//}
+	//// g0, g1 wont be used further
+	//std::cout << "------------\n";
+	//for (auto& v : result2) {
+	//	print_poly(v.first);
+	//	print_poly(v.second);
+	//}
+	//std::cout << "------------\n";
+	//print_poly(locals[6]);
+	//std::cout << "------------\n";
 	// fst part of the answer
 	fast_poly_multiplication(result2[1].first, locals[2], locals[0]);
 	fast_poly_multiplication(result2[2].first, locals[3], locals[1]);
@@ -385,28 +395,29 @@ std::array<std::pair<std::vector<unsigned>, std::vector<unsigned>>, 3>&
 	dst[0].second = locals[5];
 
 	// multiply matrices (may be optimized)
-	fast_poly_multiplication(result[2].first, locals[6], locals[0]);
-	add_poly(result[1].first, locals[0], locals[1], 0);
+	fast_poly_multiplication(result2[2].first, locals[6], locals[0]);
+	add_poly(result2[1].first, locals[0], locals[1], 0);
 
-	fast_poly_multiplication(result[2].second, locals[6], locals[0]);
-	add_poly(result[1].second, locals[0], locals[2], 0);
+	fast_poly_multiplication(result2[2].second, locals[6], locals[0]);
+	add_poly(result2[1].second, locals[0], locals[2], 0);
 
-	fast_poly_multiplication(result[2].first, result2[1].first, locals[0]);
-	fast_poly_multiplication(locals[1], result2[1].second, locals[3]);
+	fast_poly_multiplication(result2[2].first, result[1].first, locals[0]);
+	fast_poly_multiplication(locals[1], result[1].second, locals[3]);
 	add_poly(locals[0], locals[3], dst[1].first, 0);
 
-	fast_poly_multiplication(result[2].second, result2[1].first, locals[0]);
-	fast_poly_multiplication(locals[2], result2[1].second, locals[3]);
-	add_poly(locals[0], locals[3], dst[2].first, 0);
-
-	fast_poly_multiplication(result[2].first, result2[2].first, locals[0]);
-	fast_poly_multiplication(locals[1], result2[2].second, locals[3]);
+	fast_poly_multiplication(result2[2].second, result[1].first, locals[0]);
+	fast_poly_multiplication(locals[2], result[1].second, locals[3]);
 	add_poly(locals[0], locals[3], dst[1].second, 0);
 
-	fast_poly_multiplication(result[2].second, result2[2].first, locals[0]);
-	fast_poly_multiplication(locals[2], result2[2].second, locals[3]);
+	fast_poly_multiplication(result2[2].first, result[2].first, locals[0]);
+	fast_poly_multiplication(locals[1], result[2].second, locals[3]);
+	add_poly(locals[0], locals[3], dst[2].first, 0);
+
+	fast_poly_multiplication(result2[2].second, result[2].first, locals[0]);
+	fast_poly_multiplication(locals[2], result[2].second, locals[3]);
 	add_poly(locals[0], locals[3], dst[2].second, 0);
 	// end multiply 
+	//std::cout << "got to the end\n";
 
 
 	return dst;
@@ -423,7 +434,7 @@ void galois_field::AD(std::vector<unsigned>& a, unsigned n, std::vector<unsigned
 		throw std::runtime_error("singular");
 	}
 	if (_ad_tmp_emgcd_results[0][2].second[0] != 0) {
-		std::cout << "first\n" << std::endl;
+		//std::cout << "first\n" << std::endl;
 		rev_poly(_ad_tmp_polinomyals[1], _ad_tmp_polinomyals[2], 2 * n);
 		EMGCD(_ad_tmp_polinomyals[0], _ad_tmp_polinomyals[2], _ad_tmp_emgcd_results[1], 0);
 		dst1 = multipy_poly_by_const(_ad_tmp_emgcd_results[0][2].second, inverse(_ad_tmp_emgcd_results[0][0].second[degree(_ad_tmp_emgcd_results[0][0].second)]));
@@ -439,14 +450,14 @@ void galois_field::AD(std::vector<unsigned>& a, unsigned n, std::vector<unsigned
 	EMGCD(_ad_tmp_polinomyals[0], _ad_tmp_polinomyals[1], _ad_tmp_emgcd_results[0], 0);
 	//std::cout << degree(_ad_tmp_emgcd_results[0][0].second) << " " << n + 1 << "\n";
 	if (degree(_ad_tmp_emgcd_results[0][0].second) == n + 1) {
-		std::cout << "second\n" << std::endl;
+		//std::cout << "second\n" << std::endl;
 		rev_poly(_ad_tmp_polinomyals[1], _ad_tmp_polinomyals[2], 2 * n + 2);
 		EMGCD(_ad_tmp_polinomyals[0], _ad_tmp_polinomyals[2], _ad_tmp_emgcd_results[1], 0);
 		dst1 = multipy_poly_by_const(_ad_tmp_emgcd_results[0][2].second, inverse(_ad_tmp_emgcd_results[0][0].second[degree(_ad_tmp_emgcd_results[0][0].second)]));
 		dst2 = multipy_poly_by_const(_ad_tmp_emgcd_results[1][2].second, inverse(_ad_tmp_emgcd_results[1][0].second[degree(_ad_tmp_emgcd_results[1][0].second)]));
 		return;
 	}
-	std::cout << "third\n";
+	//std::cout << "third\n";
 	//std::cout << "hhhhh!\n";
 	//assert(false);
 	_ad_tmp_polinomyals[1][2 * n + 2] = _inverse_element;
