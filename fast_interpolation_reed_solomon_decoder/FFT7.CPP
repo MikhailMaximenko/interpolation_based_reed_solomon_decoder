@@ -1,10 +1,12 @@
 //Fedorenko-Trifonov's Direct FFT for GF(2^3) and primitive polynomial 0xb
+namespace {
 #define MULTIPLY(A,B,C){if (!A||!B) C=0;else {int Log=LogTable[A]+LogTable[B];if (Log>=(FIELDSIZE-1))Log-=(FIELDSIZE-1);C=GF[1+Log];};};
-typedef unsigned GFValue;
-const unsigned EXTENSION=3;
+		typedef unsigned GFValue;
+	const unsigned EXTENSION = 3;
 #define FIELDSIZE (1u<<EXTENSION)
-GFValue GF[8]={0,1,2,4,3,6,7,5};
-int LogTable[8]={-1,0,1,3,2,6,4,5};
+	GFValue GF[8] = { 0,1,2,4,3,6,7,5 };
+	int LogTable[8] = { -1,0,1,3,2,6,4,5 };
+}
 /*Generators of normal bases (LOG notation):
 1 0
 3 3
