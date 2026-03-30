@@ -464,10 +464,66 @@ std::vector<unsigned>& galois_field::IDFT(std::vector<unsigned>& src, std::vecto
 	return dst;
 }
 
+std::vector<unsigned>& galois_field::add_subpoly(std::vector<unsigned>& a, std::vector<unsigned>& b, unsigned m, unsigned start, unsigned end) {
+	for (size_t i = start; i < end; ++i) {
+		a[i - start + m] = add(a[i - start + m], b[i]);
+	}
+	return a;
+}
+
+std::vector<unsigned>& galois_field::SCHONHAGE_DFT(std::vector<unsigned>& src, std::vector<unsigned>& dst, unsigned length, unsigned root, unsigned mod, unsigned block_size) { // pseudocoded
+	//std::vector<unsigned> a, b, c;
+	//unsigned root, mod, n;
+	if (length == 1) {
+		dst[0] = src[0];
+		return dst;
+	}
+	// init b and c
+	size_t lvl = sizeof(length) * 8 - std::countl_zero(length) - 1;
+	for (size_t i = 0; i < length / 2; ++i) {
+		std::copy(src.begin() + 2 * i * block_size, src.begin() + (2 * i + 1) * block_size, _schonhage_dft_tmp[lvl].begin() + i * block_size);
+	}
+	// butterfly
+	SCHONHAGE_DFT(_schonhage_dft_tmp[lvl], _schonhage_dft_results_tmp[lvl].first, length / 2, root * root, mod, block_size);
+	for (size_t i = 0; i < length / 2; ++i) {
+		std::copy(src.begin() + 2 * (i + 1) * block_size, src.begin() + (2 * i + 2) * block_size, _schonhage_dft_tmp[lvl].begin() + i * block_size);
+	}
+	SCHONHAGE_DFT(_schonhage_dft_tmp[lvl], _schonhage_dft_results_tmp[lvl].second, length / 2, root * root, mod, block_size);
+	unsigned cur = root;
+	for (size_t i = 0; i < length / 2; ++i) {
+		
+		a[i] = b[i] + c[i] * cur;
+
+		a[i + n / 2] = b[i] + c[i] * cur; // "* root" means multiplication by x^root
+
+		cur *= root;
+	}
+
+
+	return a;
+}
+
+std::vector<unsigned>& galois_field::SCHONHAGE_CONVOLUTION() {
+	std::vector<unsigned> a, b;
+	unsigned root;
+
+
+}
+
 std::vector<unsigned>& galois_field::SCHONHAGE_STRASSEN_FFT(std::vector<unsigned>& src, std::vector<unsigned>& dst, unsigned n) {
-	if (n <= 2) {
+	unsigned k = 0;
+	if (k <= 2) {
 
 	}
+	unsigned m = 1 << (k / 2);
+	unsigned t = n / m;
+	unsigned eta = 1;
+	if (t != 2 * m) {
+		eta = 2;
+	}
+
+
+
 	return dst;
 }
 
