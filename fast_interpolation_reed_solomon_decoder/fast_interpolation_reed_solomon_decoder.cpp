@@ -104,8 +104,29 @@ void test_decoder(galois_field & gf, unsigned n, unsigned k, unsigned iters) {
 
 int main()
 {
-	galois_field gf2(7, 0x83, 7);
+	//galois_field gf2(7, 0x83, 7);
 
-	test_decoder(gf2, 127, 11, 15);
+	//test_decoder(gf2, 127, 11, 15);
+
+	galois_field gf(3, 0xb, 3);
+
+	std::vector<unsigned> a(20), b(20), c(80), d(9), e(80);
+	a[0] = 1;
+	a[8] = 1;
+	b[0] = 1;
+	b[8] = 1;
+	
+	d = { 1, 1, 1, 2, 2, 2, 3, 3, 3 };
+
+
+	gf.SCHONHAGE_DFT(a, c, 3, 3, 3, 6);
+	gf.SCHONHAGE_DFT(c, e, 3, 6, 3, 6);
+
+	//gf.add_subpoly_with_modular_shift(d, d, 0, 3, 6, 3, );
+
+	//gf.SCHONHAGE_STRASSEN_FFT(a, b, c, 9, 0);
+	gf.print_poly(c);
+	gf.print_poly(e);
+
 	return 0;
 }
