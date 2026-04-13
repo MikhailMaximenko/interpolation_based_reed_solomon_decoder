@@ -57,7 +57,7 @@ struct galois_field
 
 	std::vector<unsigned>& add_subpoly(std::vector<unsigned>&, std::vector<unsigned>&, unsigned, unsigned, unsigned);
 	std::vector<unsigned>& add_subpoly_with_modular_shift(std::vector<unsigned>&, std::vector<unsigned>&, unsigned, unsigned, unsigned, unsigned, unsigned);
-	std::vector<unsigned>& SCHONHAGE_DFT(std::vector<unsigned>&, std::vector<unsigned>&, unsigned, unsigned, unsigned, unsigned);
+	std::vector<unsigned>& SCHONHAGE_DFT(std::vector<unsigned>&, std::vector<unsigned>&, unsigned, unsigned, unsigned, unsigned, unsigned);
 	std::vector<unsigned>& SCHONHAGE_CONVOLUTION(std::vector<unsigned>& , std::vector<unsigned>& , std::vector<unsigned>& , unsigned , unsigned , unsigned , unsigned );
 	std::vector<unsigned>& SCHONHAGE_STRASSEN_FFT(std::vector<unsigned>&, std::vector<unsigned>&, std::vector<unsigned>&, unsigned, unsigned);
 
@@ -94,7 +94,7 @@ public:
 	std::vector<unsigned> _division_tmp;
 	std::vector<unsigned> _const2;
 
-	std::vector<std::vector<unsigned>> _schonhage_dft_tmp;
+	std::vector<std::vector<std::vector<unsigned>>> _schonhage_dft_tmp;
 	std::vector<std::vector<std::vector<unsigned>>> _schonhage_dft_results_tmp;
 
 	std::vector<std::array<std::pair<std::vector<unsigned>, std::vector<unsigned>>, 3>> _emgcd_tmp_result;
