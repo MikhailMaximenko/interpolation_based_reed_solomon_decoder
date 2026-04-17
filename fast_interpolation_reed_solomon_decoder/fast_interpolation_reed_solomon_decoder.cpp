@@ -110,24 +110,36 @@ int main()
 
 	galois_field gf(3, 0xb, 3);
 
-	std::vector<unsigned> a(20), b(20), c(80), d, e(80);
+	std::vector<unsigned> a(80), b(80), c(80), d(80), e(80);
 	a[0] = 1;
 	a[8] = 1;
 	b[0] = 1;
+	//b[4] = 4;
 	b[8] = 1;
+
 	
-	d = { 1, 1, 1, 2, 2, 2, 3, 3, 3, 4, 4, 4 };
+	d[0] = 1;
+	d[4] = 1;
+	d[6] = 1;
+	d[7] = 1;
+	d[12] = 1;
+	d[13] = 1;
+	d[16] = 1;
 
 	//gf.add_subpoly_with_modular_shift(d, d, 0, 4, 8, 2, 5);
 
 
-	//gf.SCHONHAGE_DFT(a, c, 3, 3, 3, 6, 0);
+	//gf.SCHONHAGE_DFT(b, c, 3, 3, 3, 6, 0);
 	//gf.SCHONHAGE_DFT(c, e, 3, 6, 3, 6, 0);
-
+	//gf.SCHONHAGE_CONVOLUTION(a, b, c, 3, 3, 3, 0);
 	//gf.add_subpoly_with_modular_shift(d, d, 0, 3, 6, 3, );
 
 	gf.SCHONHAGE_STRASSEN_FFT(a, b, c, 9, 0);
+	//gf.print_poly(b);
 	gf.print_poly(c);
+
+	gf.fast_poly_multiplication(a, b, e);
+	gf.print_poly(e);
 	//gf.print_poly(e);
 	//gf.print_poly(a);
 
