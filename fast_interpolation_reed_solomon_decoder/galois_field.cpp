@@ -548,19 +548,24 @@ std::vector<unsigned>& galois_field::SCHONHAGE_DFT(std::vector<unsigned>& src, s
 	for (size_t i = 0; i < length / 3; ++i) {
 		std::copy(src.begin() + (3 * i) * block_size, src.begin() + (3 * i + 1) * block_size, _schonhage_dft_tmp[lvl][0].begin() + i * block_size);
 	}
+	print_poly(src);
+	std::cout << "here1\n";
 	SCHONHAGE_DFT(_schonhage_dft_tmp[lvl][0], _schonhage_dft_results_tmp[lvl][0], length / 3, root * 3, m, block_size, lvl + 1);
-	
+	print_poly(_schonhage_dft_results_tmp[lvl][0]);
 	for (size_t i = 0; i < length / 3; ++i) {
 		std::copy(src.begin() + (3 * i + 1) * block_size, src.begin() + (3 * i + 2) * block_size, _schonhage_dft_tmp[lvl][1].begin() + i * block_size);
 	}
 	SCHONHAGE_DFT(_schonhage_dft_tmp[lvl][1], _schonhage_dft_results_tmp[lvl][1], length / 3, root * 3, m, block_size, lvl + 1);
-	
+	std::cout << "here2\n";
+	print_poly(_schonhage_dft_results_tmp[lvl][1]);
 	for (size_t i = 0; i < length / 3; ++i) {
 		std::copy(src.begin() + (3 * i + 2) * block_size, src.begin() + (3 * i + 3) * block_size, _schonhage_dft_tmp[lvl][2].begin() + i * block_size);
 	}
+	std::cout << "here3\n";
 	SCHONHAGE_DFT(_schonhage_dft_tmp[lvl][2], _schonhage_dft_results_tmp[lvl][2], length / 3, root * 3, m, block_size, lvl + 1);
+	print_poly(_schonhage_dft_results_tmp[lvl][2]);
 	
-	unsigned cur = root;
+	unsigned cur = 0;
 	for (size_t i = 0; i < length / 3; ++i) {
 		// a[i] =  b[i] + cur*c[i] + cur*cur*d[i]
 		// a[i + n/3] =  b[i] + root^(n/3)cur*c[i] + root^(2n/3)cur*cur*d[i]
@@ -570,22 +575,35 @@ std::vector<unsigned>& galois_field::SCHONHAGE_DFT(std::vector<unsigned>& src, s
 		// thus cur := cur % 3m;
 
 
-		size_t cc = (cur + degree(_schonhage_dft_results_tmp[lvl][1], i * block_size, (i + 1) * block_size)) % (3 * m);
-		size_t ccc = (cur * 2 + degree(_schonhage_dft_results_tmp[lvl][1], i * block_size, (i + 1) * block_size)) % (3 * m);
-
+		size_t cc = cur;// +degree(_schonhage_dft_results_tmp[lvl][1], i * block_size, (i + 1) * block_size)) % (3 * m);
+		size_t ccc = cur * 2 % (3 * m);// +degree(_schonhage_dft_results_tmp[lvl][1], i * block_size, (i + 1) * block_size)) % (3 * m);
 		add_subpoly(dst, _schonhage_dft_results_tmp[lvl][0], i * block_size, i * block_size, (i + 1) * block_size);
 		add_subpoly_with_modular_shift(dst, _schonhage_dft_results_tmp[lvl][1], i * block_size, i * block_size, (i + 1) * block_size, m, cc);
 		add_subpoly_with_modular_shift(dst, _schonhage_dft_results_tmp[lvl][2], i * block_size, i * block_size, (i + 1) * block_size, m, ccc);
 
-		cc += length / 3;
-		ccc += 2 * length / 3;
+		cc += (length / 3) * root;
+		ccc += (2 * length / 3) * root;
 
+		//std::cout << cc << " " << ccc << "\nHERE!!!\n";
+		//print_poly(dst);
+		//std::cout << "\n+\n";
+		//print_poly(_schonhage_dft_results_tmp[lvl][0]);
 		add_subpoly(dst, _schonhage_dft_results_tmp[lvl][0], (i + (length / 3)) * block_size, i * block_size, (i + 1) * block_size);
+		//std::cout << "----\n";
+		//print_poly(dst);
+		//std::cout << "\n+\n";
+		//print_poly(_schonhage_dft_results_tmp[lvl][1]);
 		add_subpoly_with_modular_shift(dst, _schonhage_dft_results_tmp[lvl][1], (i + (length / 3)) * block_size, i * block_size, (i + 1) * block_size, m, cc);
+		//std::cout << "----\n";
+		//print_poly(dst);
+		//std::cout << "\n+\n";
+		//print_poly(_schonhage_dft_results_tmp[lvl][2]);
 		add_subpoly_with_modular_shift(dst, _schonhage_dft_results_tmp[lvl][2], (i + (length / 3)) * block_size, i * block_size, (i + 1) * block_size, m, ccc);
+		//std::cout << "----\n";
+		//print_poly(dst);
 
-		cc += length / 3;
-		ccc -= length / 3;
+		cc += (length / 3) * root;
+		ccc -= (length / 3) * root;
 
 		add_subpoly(dst, _schonhage_dft_results_tmp[lvl][0], (i + (2 * length / 3)) * block_size, i * block_size, (i + 1) * block_size);
 		add_subpoly_with_modular_shift(dst, _schonhage_dft_results_tmp[lvl][1], (i + (2 * length / 3)) * block_size, i * block_size, (i + 1) * block_size, m, cc);

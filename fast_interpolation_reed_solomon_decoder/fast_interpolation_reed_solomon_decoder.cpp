@@ -116,9 +116,9 @@ int main()
 	b[0] = 1;
 	b[8] = 1;
 	
-	//d = { 1, 1, 1, 2, 2, 2, 3, 3, 3, 4, 4, 4 };
+	d = { 1, 1, 1, 2, 2, 2, 3, 3, 3, 4, 4, 4 };
 
-	//gf.add_subpoly_with_modular_shift(d, d, 0, 4, 8, 2, 1);
+	//gf.add_subpoly_with_modular_shift(d, d, 0, 4, 8, 2, 5);
 
 
 	//gf.SCHONHAGE_DFT(a, c, 3, 3, 3, 6, 0);
@@ -128,7 +128,8 @@ int main()
 
 	gf.SCHONHAGE_STRASSEN_FFT(a, b, c, 9, 0);
 	gf.print_poly(c);
-	//gf.print_poly(d);
+	//gf.print_poly(e);
+	//gf.print_poly(a);
 
 	return 0;
 }
