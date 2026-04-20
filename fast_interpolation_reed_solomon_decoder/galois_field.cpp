@@ -717,6 +717,23 @@ std::vector<unsigned>& galois_field::SCHONHAGE_STRASSEN_FFT(std::vector<unsigned
 	std::cout << "h*:\n";
 	print_poly(tmp[4]);
 	print_poly(tmp[5]);
+
+
+	for (size_t j = 0; j < t; ++j) {
+		// substitute y -> (eta^-i)*y
+		// ...
+		//std::cout << "shift: " << j << " " << eta * i * j << "\n";
+		add_subpoly_with_modular_shift(tmp[0], tmp[4], block_size * j, block_size * j, block_size * (j + 1), m, 3 * t - (eta * j) % (3 * t));
+		//print_poly(tmp[2]);
+		add_subpoly_with_modular_shift(tmp[1], tmp[5], block_size * j, block_size * j, block_size * (j + 1), m, 3 * t - (2 * eta * j) % (3 * t));
+
+	}
+	using std::swap;
+	swap(tmp[0], tmp[4]);
+	swap(tmp[1], tmp[5]);
+	std::fill(tmp[0].begin(), tmp[0].end(), 0);
+	std::fill(tmp[1].begin(), tmp[1].end(), 0);
+
 	// restore the answer by formula
 	// 4 5
 	for (size_t j = 0; j < t; ++j) {
