@@ -108,22 +108,15 @@ int main()
 
 	//test_decoder(gf2, 127, 11, 15);
 
-	galois_field gf(3, 0xb, 3);
+	galois_field gf(6, 0x43, 6);
 
-	std::vector<unsigned> a(80), b(80), c(80), d(80), e(80);
-	a[0] = 1;
-	a[1] = 6;
-	a[2] = 2;
-	a[3] = 2;
-	a[6] = 6;
-	a[8] = 5;
-	b[0] = 1;
-	b[1] = 2;
-	b[2] = 7;
-	b[3] = 1;
-	b[5] = 6;
-	b[4] = 4;
-	b[8] = 2;
+	test_decoder(gf, 63, 32, 10);
+
+	/*std::vector<unsigned> a(80), b(80), c(80), d(80), e(80);
+	a[0] = 3;
+	a[1] = 63;
+	b[0] = 3;
+	b[1] = 63;
 
 	
 	d[0] = 1;
@@ -132,7 +125,7 @@ int main()
 	d[7] = 1;
 	d[12] = 1;
 	d[13] = 1;
-	d[16] = 1;
+	d[16] = 1;*/
 
 	//gf.add_subpoly_with_modular_shift(d, d, 0, 4, 8, 2, 5);
 
@@ -142,12 +135,12 @@ int main()
 	//gf.SCHONHAGE_CONVOLUTION(a, b, c, 3, 3, 3, 0);
 	//gf.add_subpoly_with_modular_shift(d, d, 0, 3, 6, 3, );
 
-	gf.SCHONHAGE_STRASSEN_FFT(a, b, c, 9, 0);
+	//gf.fast_poly_multiplication(a, b, c, 4);
 	//gf.print_poly(b);
-	gf.print_poly(c);
+	//gf.print_poly(c);
 
-	gf.fast_poly_multiplication(a, b, e);
-	gf.print_poly(e);
+	//gf.fast_poly_multiplication(a, b, e);
+	//gf.print_poly(e);
 	//gf.print_poly(e);
 	//gf.print_poly(a);
 

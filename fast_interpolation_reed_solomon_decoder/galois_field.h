@@ -41,6 +41,7 @@ struct galois_field
 	std::vector<unsigned>& IDFT(std::vector<unsigned>&, std::vector<unsigned>&, unsigned, unsigned); // binary architecture a with variable size
 
 	std::vector<unsigned>& fast_poly_multiplication(std::vector<unsigned>&, std::vector<unsigned>&, std::vector<unsigned>&);
+	std::vector<unsigned>& fast_poly_multiplication(std::vector<unsigned>&, std::vector<unsigned>&, std::vector<unsigned>&, unsigned);
 	std::vector<unsigned>& fast_poly_division(std::vector<unsigned>&, std::vector<unsigned>&, std::vector<unsigned>&, std::vector<unsigned>&);
 	std::array<std::pair<std::vector<unsigned>, std::vector<unsigned>>, 3>& 
 		EMGCD(std::vector<unsigned> const&, std::vector<unsigned> const&, std::array<std::pair<std::vector<unsigned>, std::vector<unsigned>>, 3>&, unsigned tmp_num);
@@ -117,6 +118,8 @@ public:
 
 	std::vector<std::array<std::vector<unsigned>, 8>> _schonhage_strassen_tmp;
 	std::vector<std::array<std::vector<unsigned>, 8>> _schonhage_convolution_tmp;
+
+	std::vector<unsigned> _multiplication_result_tmp;
 
 
 };
