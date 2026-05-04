@@ -4,6 +4,7 @@
 #include "fast_interpolation_reed_solomon_decoder.h"
 #include "galois_field.h"
 #include "fft.h"
+#include <cassert>
 #include <bit>
 
 InterpolationBasedFastRSDecoder::InterpolationBasedFastRSDecoder(galois_field const& gf, unsigned n, unsigned k)
@@ -12,8 +13,13 @@ InterpolationBasedFastRSDecoder::InterpolationBasedFastRSDecoder(galois_field co
 	, _k(k)
 	, _t((n - k) / 2)
 {
+	size_t sz = 3 * (_n + 1);
 	for (auto& v : _tmp) {
-		v.resize(3 * (_n + 1));
+		v.resize(sz);
+	}
+	for (auto& v : _emgcd_tmp) {
+		v.first.resize(sz);
+		v.second.resize(sz);
 	}
 }
 
@@ -27,6 +33,7 @@ std::vector<unsigned> InterpolationBasedFastRSDecoder::encode(std::vector<unsign
 
 void InterpolationBasedFastRSDecoder::decode(std::vector<unsigned>& cw) {
 	// g <=> tmp[0]
+	_gf.print_poly(cw);
 	_gf.IDFT(cw, _tmp[0]);
 	if (_gf.degree(_tmp[0]) <= _k) {
 		return ;
@@ -39,23 +46,39 @@ void InterpolationBasedFastRSDecoder::decode(std::vector<unsigned>& cw) {
 	//_tmp[2][0] = 1;
 	//_tmp[2][_n] = 1;
 	size_t max_t = (_n - _k) / 2;
-	std::copy(_tmp[0].begin() + _n - 2 * max_t + 1, _tmp[0].begin() + _n - max_t, _tmp[1].begin());
-	std::copy(_tmp[0].begin() + _n - max_t, _tmp[0].begin() + _n, _tmp[2].begin());
+	std::copy(_tmp[0].begin() + _n - 2 * max_t + 1, _tmp[0].begin() + _n, _tmp[1].begin());
+
+	//std::copy(_tmp[0].begin() + _n - max_t, _tmp[0].begin() + _n, _tmp[2].begin());
 	//std::reverse(_tmp[2].begin(), _tmp[2].begin() + max_t);
-	std::reverse(_tmp[1].begin(), _tmp[1].begin() + max_t - 1);
-	_tmp[1][max_t - 1] = 1;	
-	_gf.GCD(_tmp[2], _tmp[1], _tmp[3]);
+	std::reverse(_tmp[1].begin(), _tmp[1].begin() + 2 * max_t);
+	//_tmp[1][max_t - 1] = 1;	
+	_tmp[2][2 * max_t] = 1;
+	_gf.EMGCD(_tmp[2], _tmp[1], _emgcd_tmp, 0);
+
 	//_gf.print_poly(_tmp[0]);
 	//_gf.print_poly(_tmp[1]);
 	//_gf.print_poly(_tmp[2]);
 	//_gf.print_poly(_tmp[3]);
-	size_t t = max_t - _gf.degree(_tmp[3]);
+	size_t fst_deg = _gf.degree(_emgcd_tmp[0].first);
+	size_t t = _gf.degree(_emgcd_tmp[2].second);
+	/*if (fst_deg < max_t) {
+		t = fst_deg;
+	}*/
+	std::cout << t << " " << _t << "\n";
+	assert(t == _t);
+	if (t < _t) {
+		_gf.print_poly(_tmp[0]);
+		_gf.print_poly(_tmp[1]);
+		_gf.print_poly(_emgcd_tmp[0].first);
+		_gf.print_poly(_emgcd_tmp[0].second);
+		_gf.print_poly(_emgcd_tmp[1].second);
+		_gf.print_poly(_emgcd_tmp[2].second);
+	}
 	std::fill(_tmp[3].begin(), _tmp[3].end(), 0);
 	std::fill(_tmp[2].begin(), _tmp[2].end(), 0);
 	//std::fill(_tmp[2].begin(), _tmp[2].end(), 0);
 	std::fill(_tmp[1].begin(), _tmp[1].end(), 0);
 
-	std::cout << t << " " << _t << "\n";
 	if (_t != 0) {
 		std::copy(_tmp[0].begin() + _n - 2 * _t + 1, _tmp[0].begin() + _n, _tmp[1].begin());
 		std::copy(_tmp[0].begin() + _n - 2 * _t, _tmp[0].begin() + _n - _t, _tmp[2].begin());
@@ -77,13 +100,12 @@ void InterpolationBasedFastRSDecoder::decode(std::vector<unsigned>& cw) {
 		std::reverse(_tmp[7].begin(), _tmp[7].begin() + _t + _k);
 		std::copy(_tmp[7].begin(), _tmp[7].begin() + _k, _tmp[0].begin());
 		//std::cout << "got:\n";
-		//_gf.print_poly(_tmp[0]);
-		//_gf.print_poly(_tmp[3]);
-		//_gf.print_poly(_tmp[4]);
-		//_gf.print_poly(_tmp[5]);
-		//_gf.print_poly(_tmp[8]);
-		//_gf.print_poly(_tmp[6]);
-		//_gf.print_poly(_tmp[7]);
+			//_gf.print_poly(_tmp[3]);
+			//_gf.print_poly(_tmp[4]);
+			//_gf.print_poly(_tmp[5]);
+			//_gf.print_poly(_tmp[8]);
+			//_gf.print_poly(_tmp[6]);
+			//_gf.print_poly(_tmp[7]);
 		//std::cout << "expected:\n";
 
 
@@ -170,10 +192,10 @@ int main()
 	//galois_field gf(3, 0xb, 3);
 
 	// 2 2
-	galois_field gf(7, 0x83, 7);
+	galois_field gf(6, 0x43, 6);
 
 	//test_decoder(gf, 7, 1, 10);
-	test_decoder(gf, 127, 100, 10);
+	test_decoder(gf, 63, 32, 10);
 
 	//std::vector<unsigned> a(80), b(80), c(80), d(80), e(80), f(80);
 	//a = { 38, 45, 31, 40, 3, 55, 51, 6, 50, 30, 31, 62, 5, 44, 38, 42, 18, 33, 47, 30, 39, 11, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };

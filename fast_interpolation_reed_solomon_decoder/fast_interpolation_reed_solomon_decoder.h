@@ -11,6 +11,9 @@ struct InterpolationBasedFastRSDecoder {
 
 	size_t _n, _k, _t;
 	std::array<std::vector<unsigned>, 12> _tmp;
+	std::array<std::pair<std::vector<unsigned>, std::vector<unsigned>>, 3> _emgcd_tmp;
+
+
 
 	InterpolationBasedFastRSDecoder(galois_field const&, unsigned, unsigned);
 
