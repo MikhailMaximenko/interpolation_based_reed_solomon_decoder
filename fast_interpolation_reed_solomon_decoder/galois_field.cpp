@@ -17,18 +17,19 @@ galois_field::galois_field(unsigned m, unsigned gen_poly, unsigned poly_size)
 	, _poly_size(poly_size)
 	, _log_table(_q)
 	, _exp_table(_q)
-	, _inverse_temporary1(_q)
-	, _inverse_temporary2(_q)
+	, _inverse_temporary1(3 * _q)
+	, _inverse_temporary2(3 * _q)
 	, _inverse_element(_n)
-	, _division_tmp(_n + 5)
-	, _const2(_n + 5, 0)
-	, _a_tmp(_q)
-	, _b_tmp(_q)
+	, _division_tmp(3 *_q)
+	, _const2(3 * _q, 0)
+	, _a_tmp(3 * _q)
+	, _b_tmp(3 * _q)
 	, _schonhage_convolution_tmp(10)
 	, _schonhage_dft_tmp(10)
 	, _schonhage_dft_results_tmp(10)
 	, _schonhage_strassen_tmp(10)
-	, _multiplication_result_tmp(4 * _n)
+	, _multiplication_result_tmp(6 * _n)
+	, _gcd_tmp_poly(3 * _q)
 {
 	init();
 }
@@ -80,7 +81,7 @@ void galois_field::init() {
 		std::cout << _s[3][i] << " ";
 	}
 	std::cout << "\n";
-	size_t tmp_sizes = _q;
+	size_t tmp_sizes = 3 * _q;
 	_emgcd_tmp_polynomials.resize(40);
 	for (auto& tmp : _emgcd_tmp_polynomials) {
 		for (auto& v : tmp) {
@@ -126,6 +127,11 @@ void galois_field::init() {
 			v.first.resize(tmp_sizes);
 			v.second.resize(tmp_sizes);
 		}
+	}
+
+	for (auto& v : _gcd_tmp) {
+		v.first.resize(3 * _q);
+		v.second.resize(3 * _q);
 	}
 	for (auto& tmp : _solve_toeplitz_tmp) {
 		//for (auto& v : tmp) {
@@ -227,55 +233,38 @@ std::vector<unsigned>& galois_field::shift_poly(std::vector<unsigned>& a) const 
 	return a;
 }
 
-unsigned galois_field::add(unsigned a, unsigned b) const { 
+unsigned galois_field::add(unsigned a, unsigned b)  { 
+	++_additions;
 	return a ^ b;
 }
 
-unsigned galois_field::multiply(unsigned a, unsigned b) const { 
+unsigned galois_field::multiply(unsigned a, unsigned b)  { 
+	++_multiplications;
 	if (a == 0 || b == 0) {
 		return 0;
 	}
 	unsigned log_sum = (_log_table[a] + _log_table[b]) % _n;
 	return _exp_table[log_sum]; 
 }
-unsigned galois_field::inverse(unsigned a) const {
+unsigned galois_field::inverse(unsigned a)  {
 	assert(a != 0);
 	if (a == 0) throw std::runtime_error("division by zero");
     return _exp_table[_n - _log_table[a]];
 }
-unsigned galois_field::divide(unsigned a, unsigned b) const { 
+unsigned galois_field::divide(unsigned a, unsigned b)  { 
 	return multiply(a, inverse(b)); 
 }
 
 // deprecated
 std::vector<unsigned>& galois_field::fast_poly_multiplication(std::vector<unsigned>& a, std::vector<unsigned>& b, std::vector<unsigned>& dst) {
-	/*DFT(a, _a_tmp);
-	DFT(b, _b_tmp);
-	
-	for (unsigned i = 0; i < a.size(); ++i) {
-		_a_tmp[i] = multiply(_a_tmp[i], _b_tmp[i]);
-	}
-	
-	IDFT(_a_tmp, dst);*/
-	/*for (auto& v : dst) {
-		v = 0;
-	}
-	for (size_t i = 0; i < a.size(); ++i) {
-		for (size_t j = 0; j < b.size(); ++j) {
-			if (i + j >= dst.size()) {
-				break;
-			}
-			dst[i + j] = add(dst[i + j], multiply(a[i], b[j]));
-		}
-	}*/
 
-	//std::reverse(dst.begin() + 1, dst.end());
-	//multipy_poly_by_const(dst, _inverse_element);
-	auto dg = std::max(degree(a), degree(b)) + 2;
-	/*if (dg <= 9) {
-		dg += 2;
-	}*/
-	return fast_poly_multiplication(a, b, dst, dg);
+	auto dg = std::max(degree(a), degree(b)) + 1;
+
+	size_t answer_dg = degree(a) + degree(b);
+	fast_poly_multiplication(a, b, dst, dg);
+	std::fill(dst.begin() + answer_dg + 1, dst.end(), 0);
+	
+	return dst;
 }
 
 std::vector<unsigned>& galois_field::fast_poly_multiplication(std::vector<unsigned>& a, std::vector<unsigned>& b, std::vector<unsigned>& dst, unsigned length) {
@@ -289,7 +278,6 @@ std::vector<unsigned>& galois_field::fast_poly_multiplication(std::vector<unsign
 
 
 	SCHONHAGE_STRASSEN_FFT(a, b, _multiplication_result_tmp, n, 0);
-	//print_poly(_multiplication_result_tmp);
 	
 	std::copy(_multiplication_result_tmp.begin(), _multiplication_result_tmp.begin() + 2 * length, dst.begin());
 	return dst;
@@ -315,6 +303,11 @@ std::vector<unsigned>& galois_field::fast_poly_division(std::vector<unsigned>& a
 	fast_poly_multiplication(quotient, b, _division_tmp);
 	add_poly(a, _division_tmp, remainder, 0);
 	return quotient;
+}
+
+void galois_field::reset_counters() {
+	_additions = 0;
+	_multiplications = 0;
 }
 
 std::array<std::pair<std::vector<unsigned>, std::vector<unsigned>>, 3>& 
@@ -438,6 +431,47 @@ std::array<std::pair<std::vector<unsigned>, std::vector<unsigned>>, 3>&
 	return dst;
 }
 
+std::vector<unsigned>& galois_field::GCD(std::vector<unsigned> const& a, std::vector<unsigned> const& b, std::vector<unsigned>& dst) {
+
+	size_t a_deg = degree(a);
+	size_t b_deg = degree(b);
+	if (a_deg >= b_deg) {
+		std::copy(a.begin(), a.begin() + degree(a) + 1, dst.begin());
+		std::copy(b.begin(), b.begin() + degree(b) + 1, _gcd_tmp_poly.begin());
+	}
+	else {
+		std::copy(a.begin(), a.begin() + degree(a) + 1, _gcd_tmp_poly.begin());
+		std::copy(b.begin(), b.begin() + degree(b) + 1, dst.begin());
+		std::swap(a_deg, b_deg);
+	}
+	do {
+		if (b_deg * 2 <= a_deg || b_deg == a_deg) {
+			fast_poly_division(dst, _gcd_tmp_poly, _gcd_tmp[0].first, _gcd_tmp[0].second);
+			std::copy(_gcd_tmp_poly.begin(), _gcd_tmp_poly.begin() + a_deg + 1, dst.begin());
+			std::copy(_gcd_tmp[0].second.begin(), _gcd_tmp[0].second.begin() + b_deg + 1, _gcd_tmp_poly.begin());
+		}
+		else {
+			EMGCD(dst, _gcd_tmp_poly, _gcd_tmp, 0);
+			//std::cout << "new iteration\n";
+			//std::cout << a_deg << " " << b_deg << "\n";
+			/*print_poly(_gcd_tmp_poly);
+			print_poly(dst);*/
+			std::copy(_gcd_tmp[0].first.begin(), _gcd_tmp[0].first.begin() + a_deg + 1, dst.begin());
+			std::copy(_gcd_tmp[0].second.begin(), _gcd_tmp[0].second.begin() + b_deg + 1, _gcd_tmp_poly.begin());
+			/*print_poly(_gcd_tmp[0].first);
+			print_poly(_gcd_tmp[0].second);
+			print_poly(_gcd_tmp_poly);
+			print_poly(dst);*/
+
+		}
+		a_deg = degree(dst);
+		b_deg = degree(_gcd_tmp_poly);
+		//break;
+	} while (b_deg != 0 || _gcd_tmp_poly[0] != 0);
+
+	return dst;
+}
+
 void galois_field::AD(std::vector<unsigned>& a, unsigned n, std::vector<unsigned>& dst1, std::vector<unsigned>& dst2) {
 	for (auto& v : _ad_tmp_polinomyals) {
 		std::fill(v.begin(), v.end(), 0);
@@ -501,13 +535,13 @@ std::vector<unsigned>& galois_field::SOLVE_TOEPITZ(std::vector<unsigned>& a, std
 
 std::vector<unsigned>& galois_field::DFT(std::vector<unsigned>& src, std::vector<unsigned>& dst) {
 	// call fft
-	call_fft(src, dst);
+	call_fft(src, dst, _n, _additions, _multiplications);
 	return dst;
 }
 
 std::vector<unsigned>& galois_field::IDFT(std::vector<unsigned>& src, std::vector<unsigned>& dst) {
 	DFT(src, dst);
-	std::reverse(dst.begin() + 1, dst.end() - 1);
+	std::reverse(dst.begin() + 1, dst.begin() + _n);
 	return dst;
 }
 
@@ -840,7 +874,7 @@ std::vector<unsigned>& galois_field::IDFTimpl(std::vector<unsigned>& src, std::v
 void galois_field::split_poly(std::vector<unsigned> const& p, std::vector<unsigned>& dst1, std::vector<unsigned>& dst2, unsigned m) {
 	std::fill(dst2.begin(), dst2.end(), 0);
 	std::fill(dst1.begin(), dst1.end(), 0);
-	for (unsigned i = 0; i < p.size(); ++i) {
+	for (unsigned i = 0; i <= degree(p); ++i) {
 		if (i < m) {
 			dst2[i] = p[i];
 		}
@@ -904,7 +938,7 @@ void galois_field::print_poly(std::vector<unsigned> const& p) {
 
 }
 
-std::vector<unsigned> galois_field::inv_poly(std::vector<unsigned>& src, std::vector<unsigned>& dst, unsigned mod) {
+std::vector<unsigned>& galois_field::inv_poly(std::vector<unsigned>& src, std::vector<unsigned>& dst, unsigned mod) {
 	// make zeros in inverse tmp
 	unsigned g0 = inverse(src[0]);
 	unsigned r = sizeof(unsigned) * 8 - std::countl_zero(mod - 1);
@@ -920,7 +954,7 @@ std::vector<unsigned> galois_field::inv_poly(std::vector<unsigned>& src, std::ve
 		remainder_of_power(_inverse_temporary2, 1 << (i));
 		//print_poly(src);
 		//print_poly(_inverse_temporary1);
-		fast_poly_multiplication(_inverse_temporary2, _inverse_temporary1, dst, (unsigned)(1 << (i + 1)));
+		fast_poly_multiplication(_inverse_temporary2, _inverse_temporary1, dst, (unsigned)(1 << (i)));
 		fast_poly_multiplication(src, remainder_of_power(_inverse_temporary1, 1 << (i)), _inverse_temporary2);
 		//std::cout << std::min((unsigned)(1 << i), mod) << " " << i << "\n";
 		//print_poly(dst);

@@ -1,4 +1,4 @@
-//Fedorenko-Trifonov's Direct FFT for GF(2^7) and primitive polynomial 
+//Fedorenko-Trifonov's Direct FFT for GF(2^7) and primitive polynomial 0x83
 namespace {
 #define MULTIPLY(A,B,C){if (!A||!B) C=0;else {int Log=LogTable[A]+LogTable[B];if (Log>=(FIELDSIZE-1))Log-=(FIELDSIZE-1);C=GF[1+Log];};};
 	typedef unsigned GFValue;

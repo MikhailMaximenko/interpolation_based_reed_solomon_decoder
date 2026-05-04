@@ -29,10 +29,10 @@ struct galois_field
 
 	galois_field(unsigned, unsigned, unsigned);
 
-	unsigned multiply(unsigned, unsigned) const;
-	unsigned add(unsigned, unsigned) const;
-	unsigned divide(unsigned, unsigned) const;
-	unsigned inverse(unsigned) const;
+	unsigned multiply(unsigned, unsigned) ;
+	unsigned add(unsigned, unsigned) ;
+	unsigned divide(unsigned, unsigned) ;
+	unsigned inverse(unsigned) ;
 
 	std::vector<unsigned>& DFT(std::vector<unsigned>&, std::vector<unsigned>&); // cyclotomic
 	std::vector<unsigned>& IDFT(std::vector<unsigned>&, std::vector<unsigned>&); // cyclotomic
@@ -45,6 +45,7 @@ struct galois_field
 	std::vector<unsigned>& fast_poly_division(std::vector<unsigned>&, std::vector<unsigned>&, std::vector<unsigned>&, std::vector<unsigned>&);
 	std::array<std::pair<std::vector<unsigned>, std::vector<unsigned>>, 3>& 
 		EMGCD(std::vector<unsigned> const&, std::vector<unsigned> const&, std::array<std::pair<std::vector<unsigned>, std::vector<unsigned>>, 3>&, unsigned tmp_num);
+	std::vector<unsigned>& GCD(std::vector<unsigned> const&, std::vector<unsigned> const&, std::vector<unsigned>&);
 	void AD(std::vector<unsigned>&, unsigned, std::vector<unsigned>&, std::vector<unsigned>&);
 
 	std::vector<unsigned>& SOLVE_TOEPITZ(std::vector<unsigned>&, std::vector<unsigned>&, unsigned, std::vector<unsigned>&);
@@ -61,6 +62,8 @@ struct galois_field
 	std::vector<unsigned>& SCHONHAGE_DFT(std::vector<unsigned>&, std::vector<unsigned>&, unsigned, unsigned, unsigned, unsigned, unsigned);
 	std::vector<unsigned>& SCHONHAGE_CONVOLUTION(std::vector<unsigned>& , std::vector<unsigned>& , std::vector<unsigned>& , unsigned , unsigned , unsigned , unsigned );
 	std::vector<unsigned>& SCHONHAGE_STRASSEN_FFT(std::vector<unsigned>&, std::vector<unsigned>&, std::vector<unsigned>&, unsigned, unsigned);
+
+	void reset_counters();
 
 public:
 	void init();
@@ -84,7 +87,7 @@ public:
 	
 
 	std::vector<unsigned>& remainder_of_power(std::vector<unsigned>&, unsigned);
-	std::vector<unsigned> inv_poly(std::vector<unsigned>&, std::vector<unsigned>&, unsigned);
+	std::vector<unsigned>& inv_poly(std::vector<unsigned>&, std::vector<unsigned>&, unsigned);
 	void assign_zero(std::vector<unsigned>&);
 
 public:
@@ -102,6 +105,9 @@ public:
 	std::vector<std::array<std::pair<std::vector<unsigned>, std::vector<unsigned>>, 3>> _emgcd_tmp_result2;
 	std::vector<std::array<std::vector<unsigned>, 8>> _emgcd_tmp_polynomials;
 
+
+	std::array<std::pair<std::vector<unsigned>, std::vector<unsigned>>, 3> _gcd_tmp;
+	std::vector<unsigned> _gcd_tmp_poly;
 	std::array<std::array<std::pair<std::vector<unsigned>, std::vector<unsigned>>, 3>, 2> _ad_tmp_emgcd_results;
 	std::array<std::vector<unsigned>, 3> _ad_tmp_polinomyals;
 
@@ -120,6 +126,8 @@ public:
 	std::vector<std::array<std::vector<unsigned>, 8>> _schonhage_convolution_tmp;
 
 	std::vector<unsigned> _multiplication_result_tmp;
+	size_t _additions = 0;
+	size_t _multiplications = 0;
 
 
 };

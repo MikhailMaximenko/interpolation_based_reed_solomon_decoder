@@ -13,7 +13,7 @@ InterpolationBasedFastRSDecoder::InterpolationBasedFastRSDecoder(galois_field co
 	, _t((n - k) / 2)
 {
 	for (auto& v : _tmp) {
-		v.resize(_n + 1);
+		v.resize(3 * (_n + 1));
 	}
 }
 
@@ -26,26 +26,81 @@ std::vector<unsigned> InterpolationBasedFastRSDecoder::encode(std::vector<unsign
 
 
 void InterpolationBasedFastRSDecoder::decode(std::vector<unsigned>& cw) {
+	// g <=> tmp[0]
+	_gf.IDFT(cw, _tmp[0]);
+	if (_gf.degree(_tmp[0]) <= _k) {
+		return ;
+	}
+	for (auto& tmp : _tmp) {
+		std::fill(tmp.begin(), tmp.end(), 0);
+	}
+	_gf.IDFT(cw, _tmp[0]);
+
+	//_tmp[2][0] = 1;
+	//_tmp[2][_n] = 1;
+	size_t max_t = (_n - _k) / 2;
+	std::copy(_tmp[0].begin() + _n - 2 * max_t + 1, _tmp[0].begin() + _n - max_t, _tmp[1].begin());
+	std::copy(_tmp[0].begin() + _n - max_t, _tmp[0].begin() + _n, _tmp[2].begin());
+	//std::reverse(_tmp[2].begin(), _tmp[2].begin() + max_t);
+	std::reverse(_tmp[1].begin(), _tmp[1].begin() + max_t - 1);
+	_tmp[1][max_t - 1] = 1;	
+	_gf.GCD(_tmp[2], _tmp[1], _tmp[3]);
+	//_gf.print_poly(_tmp[0]);
+	//_gf.print_poly(_tmp[1]);
+	//_gf.print_poly(_tmp[2]);
+	//_gf.print_poly(_tmp[3]);
+	size_t t = max_t - _gf.degree(_tmp[3]);
+	std::fill(_tmp[3].begin(), _tmp[3].end(), 0);
+	std::fill(_tmp[2].begin(), _tmp[2].end(), 0);
+	//std::fill(_tmp[2].begin(), _tmp[2].end(), 0);
+	std::fill(_tmp[1].begin(), _tmp[1].end(), 0);
+
+	std::cout << t << " " << _t << "\n";
 	if (_t != 0) {
-		for (auto& tmp : _tmp) {
-			std::fill(tmp.begin(), tmp.end(), 0);
-		}
-		_gf.IDFT(cw, _tmp[0]);
 		std::copy(_tmp[0].begin() + _n - 2 * _t + 1, _tmp[0].begin() + _n, _tmp[1].begin());
 		std::copy(_tmp[0].begin() + _n - 2 * _t, _tmp[0].begin() + _n - _t, _tmp[2].begin());
 		_gf.SOLVE_TOEPITZ(_tmp[1], _tmp[2], _t - 1, _tmp[3]);
 
-		for (ptrdiff_t i = _k - 1; i >= 0; --i) {
-			_tmp[0][i] = 0;
-			for (size_t j = 1; j <= _t; ++j) {
-				_tmp[0][i] = _gf.add(_tmp[0][i], _gf.multiply(_tmp[0][i + j], _tmp[3][_t - j]));
-			}
-		}
+		// tmp[3] <=> eta
+		std::copy(_tmp[3].begin(), _tmp[3].begin() + _t, _tmp[4].begin());
+		std::copy(_tmp[0].begin() + _k, _tmp[0].begin() + _k + _t, _tmp[5].begin());
+		std::reverse(_tmp[4].begin(), _tmp[4].begin() + _t + 1); // D(x)
+		//std::cout << "before reverse:\n";
+		//std::cout << "k: " << _k << " t: " << _t << "\n";
+		//_gf.print_poly(_tmp[0]);
+		//_gf.print_poly(_tmp[5]);
+		std::reverse(_tmp[5].begin(), _tmp[5].begin() + _t); // h0 .. h_(t-1)
+		_tmp[4][0] = 1;
+		_gf.inv_poly(_tmp[4], _tmp[6], _k + _t);
+		_gf.remainder_of_power(_gf.fast_poly_multiplication(_tmp[5], _tmp[4], _tmp[8]), _t);
+		_gf.remainder_of_power(_gf.fast_poly_multiplication(_tmp[6], _tmp[8], _tmp[7]), _k + _t);
+		std::reverse(_tmp[7].begin(), _tmp[7].begin() + _t + _k);
+		std::copy(_tmp[7].begin(), _tmp[7].begin() + _k, _tmp[0].begin());
+		//std::cout << "got:\n";
+		//_gf.print_poly(_tmp[0]);
+		//_gf.print_poly(_tmp[3]);
+		//_gf.print_poly(_tmp[4]);
+		//_gf.print_poly(_tmp[5]);
+		//_gf.print_poly(_tmp[8]);
+		//_gf.print_poly(_tmp[6]);
+		//_gf.print_poly(_tmp[7]);
+		//std::cout << "expected:\n";
+
+
+		 
+
+		//for (ptrdiff_t i = _k - 1; i >= 0; --i) {
+		//	_tmp[0][i] = 0; 
+		//	for (size_t j = 1; j <= _t; ++j) {
+		//		_tmp[0][i] = _gf.add(_tmp[0][i], _gf.multiply(_tmp[0][i + j], _tmp[3][_t - j]));
+		//	}
+		//}
+		//_gf.print_poly(_tmp[0]);
 
 		using std::swap;
 		swap(cw, _tmp[1]);
 		_gf.DFT(_tmp[0], _tmp[2]);
-		_gf.sub_poly(_tmp[1], _tmp[2], cw);
+		_gf.add_poly(_tmp[1], _tmp[2], cw, 0);
 	}
 
 
@@ -84,7 +139,10 @@ void test_decoder(galois_field & gf, unsigned n, unsigned k, unsigned iters) {
 			auto errors = generate_errors(n, t);
 			std::vector<unsigned> msg_with_errors(n + 1);
 			gf.add_poly(encoded, errors, msg_with_errors, 0);
+			decoder._gf.reset_counters();
 			decoder.decode(msg_with_errors);
+			std::cout << "additions: " << decoder._gf._additions << " multiplications: " << decoder._gf._multiplications << "\n";
+			decoder._gf.reset_counters();
 			for (size_t i = 0; i < n; ++i) {
 				if (encoded[i] != msg_with_errors[i]) {
 					std::cout << "decoding error occured with t:"<< t << "\n";
@@ -96,6 +154,7 @@ void test_decoder(galois_field & gf, unsigned n, unsigned k, unsigned iters) {
 				}
 			}
 		}
+		//break;
 	}
 	std::cout << "tests passed\n";
 
@@ -108,12 +167,33 @@ int main()
 
 	//test_decoder(gf2, 127, 11, 15);
 
-	galois_field gf(6, 0x43, 6);
+	//galois_field gf(3, 0xb, 3);
 
-	test_decoder(gf, 63, 32, 10);
+	// 2 2
+	galois_field gf(7, 0x83, 7);
 
-	//std::vector<unsigned> a(80), b(80), c(80), d(80), e(80);
+	//test_decoder(gf, 7, 1, 10);
+	test_decoder(gf, 127, 100, 10);
+
+	//std::vector<unsigned> a(80), b(80), c(80), d(80), e(80), f(80);
 	//a = { 38, 45, 31, 40, 3, 55, 51, 6, 50, 30, 31, 62, 5, 44, 38, 42, 18, 33, 47, 30, 39, 11, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
+	//a[0] = 2;
+	//a[1] = 2;
+	//a[2] = 1;
+	//a[3] = 7;
+	//a[4] = 2;
+	//b[0] = 3;
+	//b[1] = 1;
+	//c[0] = 1;
+	//c[1] = 3;
+	//c[2] = 1;
+	// expected result 1 7
+	//gf.inv_poly(c, d, 4);
+	//gf.remainder_of_power(gf.fast_poly_multiplication(a, c, f), 2);
+	//gf.print_poly(f);
+	//gf.fast_poly_multiplication(f, d, e);
+	//gf.print_poly(d);
+	//gf.print_poly(e);
 	////a[0] = 3;
 	////a[1] = 63;
 	//b[0] = 56;
