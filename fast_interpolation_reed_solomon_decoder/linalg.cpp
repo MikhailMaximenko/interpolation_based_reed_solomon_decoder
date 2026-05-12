@@ -6,6 +6,7 @@
 #include <cstring>
 #include <iostream>
 #include <set>
+#include<bit>
 #include <stdexcept>
 #include <string>
 #include <utility>
@@ -14,15 +15,15 @@
 namespace linalg {
 
 #ifdef __GNUC__
-#define COUNT_LEADING(v) __builtin_ctzll(v);
+#define COUNT_LEADING(v) std::countl_zero(v);
 #else
-#define COUNT_LEADING(v) _tzcnt_u64(v);
+#define COUNT_LEADING(v) std::countr_zero(v);
 #endif
 
 #ifdef __GNUC__
-#define COUNT_TRAILING(v) __builtin_clzll(v);
+#define COUNT_TRAILING(v) std::countl_zero(v);
 #else
-#define COUNT_TRAILING(v) _lzcnt_u64(v);
+#define COUNT_TRAILING(v) std::countr_zero(v);
 #endif
 
     bit_vector::bit_vector(size_t v, size_t sz) : _storage(1, v), _sz(sz) {}

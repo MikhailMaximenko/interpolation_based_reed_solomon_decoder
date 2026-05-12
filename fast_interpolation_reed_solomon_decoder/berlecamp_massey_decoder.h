@@ -19,7 +19,7 @@ namespace encoding {
 
 
     struct bch_decoder {
-        galois_field _fld;
+        galois_field _gf;
         size_t _n;
         size_t _k;
         size_t _root;

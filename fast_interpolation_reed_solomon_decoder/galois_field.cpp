@@ -210,7 +210,7 @@ unsigned galois_field::degree(std::vector<unsigned> const& a) {
 
 unsigned galois_field::degree(std::vector<unsigned> const& a, unsigned start, unsigned end) {
 	if (end <= start || a.size() == 0) { return 0; }
-	for (unsigned deg = std::min((uint64_t)end, a.size()) - 1; deg > start; --deg) {
+	for (unsigned deg = std::min((size_t)end, a.size()) - 1; deg > start; --deg) {
 		if (a[deg] != 0) {
 			return deg - start;
 		}
@@ -301,7 +301,7 @@ std::vector<unsigned>& galois_field::fast_poly_multiplication(std::vector<unsign
 
 	SCHONHAGE_STRASSEN_FFT(a, b, _multiplication_result_tmp, n, 0);
 	
-	std::copy(_multiplication_result_tmp.begin(), _multiplication_result_tmp.begin() + std::min(2ull * length, dst.size()), dst.begin());
+	std::copy(_multiplication_result_tmp.begin(), _multiplication_result_tmp.begin() + std::min((size_t)2ull * length, dst.size()), dst.begin());
 	return dst;
 }
 
@@ -725,8 +725,8 @@ std::vector<unsigned>& galois_field::SCHONHAGE_STRASSEN_FFT(std::vector<unsigned
 		std::fill(v.begin(), v.end(), 0);
 	}
 
-	std::copy(a.begin(), a.begin() + std::min((uint64_t)2 * n, a.size()), tmp[6].begin());
-	std::copy(b.begin(), b.begin() + std::min((uint64_t)2 * n, b.size()), tmp[7].begin());
+	std::copy(a.begin(), a.begin() + std::min((size_t)2 * n, a.size()), tmp[6].begin());
+	std::copy(b.begin(), b.begin() + std::min((size_t)2 * n, b.size()), tmp[7].begin());
 
 	if (n <= 9) {
 		//std::fill(dst.begin(), dst.begin() + 4 * n, 0);
@@ -740,7 +740,7 @@ std::vector<unsigned>& galois_field::SCHONHAGE_STRASSEN_FFT(std::vector<unsigned
 			}
 		}
 		add_subpoly_with_modular_shift(tmp[2], tmp[2], 0, 2 * n, 4 * n, n, 2 * n);
-		std::copy(tmp[2].begin(), tmp[2].begin() + std::min((uint64_t)2 * n, dst.size()), dst.begin());
+		std::copy(tmp[2].begin(), tmp[2].begin() + std::min((size_t)2 * n, dst.size()), dst.begin());
 		//std::fill(dst.begin() + 2 * n, dst.begin() + 4 * n, 0);
 		return dst;
 	}
@@ -843,7 +843,7 @@ std::vector<unsigned>& galois_field::SCHONHAGE_STRASSEN_FFT(std::vector<unsigned
 	}*/
 	//print_poly(tmp[1]);
 
-	std::copy(tmp[1].begin(), tmp[1].begin() + std::min(2ull * n, dst.size()), dst.begin());
+	std::copy(tmp[1].begin(), tmp[1].begin() + std::min((size_t)2ull * n, dst.size()), dst.begin());
 	//std::cout << "good bye\n";
 	return dst;
 }

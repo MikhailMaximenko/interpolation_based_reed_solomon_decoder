@@ -4,6 +4,7 @@
 #include "fast_interpolation_reed_solomon_decoder.h"
 #include "galois_field.h"
 #include "fft.h"
+#include "berlecamp_massey_decoder.h"
 #include <cassert>
 #include <bit>
 
@@ -153,18 +154,26 @@ std::vector<unsigned> generate_errors(unsigned n, unsigned t) {
 
 
 void test_decoder(galois_field & gf, unsigned n, unsigned k, unsigned iters) {
-	InterpolationBasedFastRSDecoder decoder(gf, n, k);
-	for (size_t t = 25; t <= 30; ++t) {
+	encoding::bch_decoder decoder(gf, n, k, 2, n - k + 1, 1);
+	for (size_t t = 0; t <= (n - k)/2; ++t) {
 		std::cout << "testing t: " << t << "\n";
-		decoder._t = t;
+		//decoder._t = t;
 		for (size_t _ = 0; _ < iters; ++_) {
 			auto msg = generate_message(n, k);
-			auto encoded = decoder.encode(msg);
+			std::vector<unsigned> encoded(n);
+			gf.DFT(msg, encoded);
+			//auto encoded = decoder.encode(msg);
 			auto errors = generate_errors(n, t);
-			std::vector<unsigned> msg_with_errors(n + 1);
+			std::vector<unsigned> msg_with_errors(n);
 			gf.add_poly(encoded, errors, msg_with_errors, 0);
+			size_t sz = n * gf._m;
+			linalg::bit_vector vt(sz, false);
 			decoder._gf.reset_counters();
-			decoder.decode(msg_with_errors);
+			gf.translate_to_bit_vector(msg_with_errors, vt);
+			decoder._decoding.cp(vt);
+			auto res = decoder.decode();
+			gf.translate_bit_vector(res, msg_with_errors);
+
 			std::cout << "additions: " << decoder._gf._additions << " multiplications: " << decoder._gf._multiplications << "\n";
 			decoder._gf.reset_counters();
 			for (size_t i = 0; i < n; ++i) {
@@ -196,13 +205,13 @@ int main()
 	// 2 2
 	galois_field gf(3, 0xb, 3);
 
-	//test_decoder(gf, 7, 1, 10);
+	test_decoder(gf, 7, 1, 10);
 	//test_decoder(gf, 511, 256, 10);
 
-	std::vector<unsigned> a(7), b(7), c(80), d(80), e(80), f(80);
-	a[1] = 1;
-	gf.DFT(a, b);
-	gf.print_poly(b);
+	//std::vector<unsigned> a(7), b(7), c(80), d(80), e(80), f(80);
+	//a[1] = 1;
+	//gf.DFT(a, b);
+	//gf.print_poly(b);
 	//a = { 38, 45, 31, 40, 3, 55, 51, 6, 50, 30, 31, 62, 5, 44, 38, 42, 18, 33, 47, 30, 39, 11, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
 	//a[0] = 2;
 	//a[1] = 2;
