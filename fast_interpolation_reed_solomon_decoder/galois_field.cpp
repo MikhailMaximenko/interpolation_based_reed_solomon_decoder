@@ -17,19 +17,19 @@ galois_field::galois_field(unsigned m, unsigned gen_poly, unsigned poly_size)
 	, _poly_size(poly_size)
 	, _log_table(_q)
 	, _exp_table(_q)
-	, _inverse_temporary1(3 * _q)
-	, _inverse_temporary2(3 * _q)
+	, _inverse_temporary1(_q)
+	, _inverse_temporary2(_q)
 	, _inverse_element(_n)
-	, _division_tmp(3 *_q)
-	, _const2(3 * _q, 0)
-	, _a_tmp(3 * _q)
-	, _b_tmp(3 * _q)
-	, _schonhage_convolution_tmp(10)
-	, _schonhage_dft_tmp(10)
-	, _schonhage_dft_results_tmp(10)
-	, _schonhage_strassen_tmp(10)
+	, _division_tmp(_q)
+	, _const2(_q, 0)
+	, _a_tmp(_q)
+	, _b_tmp(_q)
+	, _schonhage_convolution_tmp(5)
+	, _schonhage_dft_tmp(5)
+	, _schonhage_dft_results_tmp(5)
+	, _schonhage_strassen_tmp(5)
 	, _multiplication_result_tmp(6 * _n)
-	, _gcd_tmp_poly(3 * _q)
+	, _gcd_tmp_poly(_q)
 {
 	init();
 }
@@ -81,7 +81,7 @@ void galois_field::init() {
 		std::cout << _s[3][i] << " ";
 	}
 	std::cout << "\n";
-	size_t tmp_sizes = 3 * _q;
+	size_t tmp_sizes = _q;
 	_emgcd_tmp_polynomials.resize(40);
 	for (auto& tmp : _emgcd_tmp_polynomials) {
 		for (auto& v : tmp) {
@@ -140,20 +140,22 @@ void galois_field::init() {
 		//}
 	}
 
-	for (size_t i = 0; i < 10; ++i) {
-		_schonhage_dft_tmp[i].resize(10 * _q);
+	std::cout << "initting mult tmps\n";
+
+	for (size_t i = 0; i < _schonhage_dft_tmp.size(); ++i) {
+		_schonhage_dft_tmp[i].resize(8 * _q);
 		for (auto& v : _schonhage_dft_tmp[i]) {
-			v.resize(10 * _q);
+			v.resize(8 * _q);
 		}
 		
 		for (auto& v : _schonhage_convolution_tmp[i]) {
-			v.resize(10 * _q);
+			v.resize(8 * _q);
 		}
 			//std::cout << _schonhage_dft_results_tmp.size() << " here\n";
 		_schonhage_dft_results_tmp[i].resize(10);
 		for (auto& v : _schonhage_dft_results_tmp[i]) {
 			//std::cout << "here!\n";
-			v.resize(10 * _q);
+			v.resize(8 * _q);
 			/*for (auto& u : v) {
 				u.resize(10 * _q);
 			}*/
@@ -161,7 +163,7 @@ void galois_field::init() {
 		}
 		//_schonhage_strassen_tmp[i].resize(10);
 		for (auto& v : _schonhage_strassen_tmp[i]) {
-			v.resize(10 * _q);
+			v.resize(8 * _q);
 		}
 	}
 
@@ -207,8 +209,8 @@ unsigned galois_field::degree(std::vector<unsigned> const& a) {
 }
 
 unsigned galois_field::degree(std::vector<unsigned> const& a, unsigned start, unsigned end) {
-	if (end <= start) { return 0; }
-	for (unsigned deg = end - 1; deg > start; --deg) {
+	if (end <= start || a.size() == 0) { return 0; }
+	for (unsigned deg = std::min((uint64_t)end, a.size()) - 1; deg > start; --deg) {
 		if (a[deg] != 0) {
 			return deg - start;
 		}
@@ -261,8 +263,28 @@ std::vector<unsigned>& galois_field::fast_poly_multiplication(std::vector<unsign
 	auto dg = std::max(degree(a), degree(b)) + 1;
 
 	size_t answer_dg = degree(a) + degree(b);
+	/*std::fill(_dft_tmp[0][0].begin(), _dft_tmp[0][0].end(), 0);
+	for (size_t i = 0; i <= degree(a); ++i) {
+		for (size_t j = 0; j <= degree(b); ++j) {
+			if (i + j > answer_dg) {
+				break;
+			}
+			_dft_tmp[0][0][i + j] = add(_dft_tmp[0][0][i + j], multiply(a[i], b[j]));
+		}
+	}*/
+	//_dft_tmp[0]
+
 	fast_poly_multiplication(a, b, dst, dg);
-	std::fill(dst.begin() + answer_dg + 1, dst.end(), 0);
+	std::fill(dst.begin() + std::min(answer_dg + 1, dst.size()), dst.end(), 0);
+	/*for (size_t i = 0; i <= answer_dg; ++i) {
+		if (dst[i] != _dft_tmp[0][0][i] || (degree(dst) != answer_dg && degree(dst) != 0)) {
+			print_poly(a);
+			print_poly(b);
+			print_poly(dst);
+			print_poly(_dft_tmp[0][0]);
+			throw std::runtime_error("bad multiplication");
+		}
+	}*/
 	
 	return dst;
 }
@@ -279,7 +301,7 @@ std::vector<unsigned>& galois_field::fast_poly_multiplication(std::vector<unsign
 
 	SCHONHAGE_STRASSEN_FFT(a, b, _multiplication_result_tmp, n, 0);
 	
-	std::copy(_multiplication_result_tmp.begin(), _multiplication_result_tmp.begin() + 2 * length, dst.begin());
+	std::copy(_multiplication_result_tmp.begin(), _multiplication_result_tmp.begin() + std::min(2ull * length, dst.size()), dst.begin());
 	return dst;
 }
 
@@ -314,6 +336,9 @@ std::array<std::pair<std::vector<unsigned>, std::vector<unsigned>>, 3>&
 		galois_field::EMGCD(std::vector<unsigned> const& u0, std::vector<unsigned> const& u1, std::array<std::pair<std::vector<unsigned>, std::vector<unsigned>>, 3>& dst, unsigned tmp_num) {
 	unsigned n = degree(u0);
 	auto deg_u1 = degree(u1);
+	//std::cout << "call " << tmp_num << "\n";
+	//print_poly(u0);
+	//print_poly(u1);
 	unsigned m = n / 2 + n % 2;
 
 	if ((deg_u1 == 0 && u1[0] == 0) || deg_u1 < m) {
@@ -326,6 +351,7 @@ std::array<std::pair<std::vector<unsigned>, std::vector<unsigned>>, 3>&
 
 		dst[1].first[0] = 1;
 		dst[2].second[0] = 1;
+		//std::cout << "ret here\n";
 		return dst;
 	}
 	auto& locals = _emgcd_tmp_polynomials[tmp_num];
@@ -687,24 +713,35 @@ std::vector<unsigned>& galois_field::SCHONHAGE_CONVOLUTION(std::vector<unsigned>
 
 std::vector<unsigned>& galois_field::SCHONHAGE_STRASSEN_FFT(std::vector<unsigned>& a, std::vector<unsigned>& b, std::vector<unsigned>& dst, unsigned n, unsigned level) {
 	unsigned c = 1, k = 0;
+	//std::cout << level << " " << n << "\n";
 	while (c < n) {
+		//std::cout << "hi\n";
 		c *= 3;
 		++k;
 	}
 	unsigned m = std::pow(3, k / 2 + k % 2);
-	if (n <= 300) {
-		std::fill(dst.begin(), dst.begin() + 4 * n, 0);
+	auto& tmp = _schonhage_strassen_tmp[level];
+	for (auto& v : tmp) {
+		std::fill(v.begin(), v.end(), 0);
+	}
+
+	std::copy(a.begin(), a.begin() + std::min((uint64_t)2 * n, a.size()), tmp[6].begin());
+	std::copy(b.begin(), b.begin() + std::min((uint64_t)2 * n, b.size()), tmp[7].begin());
+
+	if (n <= 9) {
+		//std::fill(dst.begin(), dst.begin() + 4 * n, 0);
 
 		for (size_t i = 0; i < 2 * n; ++i) {
 			for (size_t j = 0; j < 2 * n; ++j) {
 				if (i + j >= dst.size()) {
 					break;
 				}
-				dst[i + j] = add(dst[i + j], multiply(a[i], b[j]));
+				tmp[2][i + j] = add(tmp[2][i + j], multiply(tmp[6][i], tmp[7][j]));
 			}
 		}
-		add_subpoly_with_modular_shift(dst, dst, 0, 2 * n, 4 * n, n, 2 * n);
-		std::fill(dst.begin() + 2 * n, dst.begin() + 4 * n, 0);
+		add_subpoly_with_modular_shift(tmp[2], tmp[2], 0, 2 * n, 4 * n, n, 2 * n);
+		std::copy(tmp[2].begin(), tmp[2].begin() + std::min((uint64_t)2 * n, dst.size()), dst.begin());
+		//std::fill(dst.begin() + 2 * n, dst.begin() + 4 * n, 0);
 		return dst;
 	}
 	//std::cout << "here!!!!\n";
@@ -717,10 +754,6 @@ std::vector<unsigned>& galois_field::SCHONHAGE_STRASSEN_FFT(std::vector<unsigned
 		eta = 3;
 	}
 
-	auto& tmp = _schonhage_strassen_tmp[level];
-	for (auto& v : tmp) {
-		std::fill(v.begin(), v.end(), 0);
-	}
 
 	for (size_t i = 1; i <= 2; ++i) {
 
@@ -730,13 +763,13 @@ std::vector<unsigned>& galois_field::SCHONHAGE_STRASSEN_FFT(std::vector<unsigned
 		// preparations
 		for (size_t j = 0; j < t; ++j) {
 			// f*_i <- f* - eta^(it)
-			std::copy(a.begin() + block_size * j / 2, a.begin() + block_size * (j + 1) / 2, tmp[0].begin() + block_size * j);
-			add_subpoly_with_modular_shift(tmp[0], a, block_size * j, n + block_size * j / 2, n + block_size * (j + 1) / 2, m, eta * i * t);
+			std::copy(tmp[6].begin() + block_size * j / 2, tmp[6].begin() + block_size * (j + 1) / 2, tmp[0].begin() + block_size * j);
+			add_subpoly_with_modular_shift(tmp[0], tmp[6], block_size * j, n + block_size * j / 2, n + block_size * (j + 1) / 2, m, eta * i * t);
 
 
 			// g*_i <- g* - eta^(it)
-			std::copy(b.begin() + block_size * j / 2, b.begin() + block_size * (j + 1) / 2, tmp[1].begin() + block_size * j);
-			add_subpoly_with_modular_shift(tmp[1], b, block_size * j, n + block_size * j / 2, n + block_size * (j + 1) / 2, m, eta * i * t);
+			std::copy(tmp[7].begin() + block_size * j / 2, tmp[7].begin() + block_size * (j + 1) / 2, tmp[1].begin() + block_size * j);
+			add_subpoly_with_modular_shift(tmp[1], tmp[7], block_size * j, n + block_size * j / 2, n + block_size * (j + 1) / 2, m, eta * i * t);
 			// substitute y -> (eta^i)*y
 			add_subpoly_with_modular_shift(tmp[2], tmp[0], block_size * j, block_size * j, block_size * (j + 1), m, eta * i * j);
 			add_subpoly_with_modular_shift(tmp[3], tmp[1], block_size * j, block_size * j, block_size * (j + 1), m, eta * i * j);
@@ -810,8 +843,8 @@ std::vector<unsigned>& galois_field::SCHONHAGE_STRASSEN_FFT(std::vector<unsigned
 	}*/
 	//print_poly(tmp[1]);
 
-	std::copy(tmp[1].begin(), tmp[1].begin() + 2 * n, dst.begin());
-
+	std::copy(tmp[1].begin(), tmp[1].begin() + std::min(2ull * n, dst.size()), dst.begin());
+	//std::cout << "good bye\n";
 	return dst;
 }
 
@@ -944,6 +977,7 @@ std::vector<unsigned>& galois_field::inv_poly(std::vector<unsigned>& src, std::v
 	unsigned r = sizeof(unsigned) * 8 - std::countl_zero(mod - 1);
 	dst[0] = g0;
 	for (unsigned i = 1; i <= r; ++i) {
+		//std::cout << r << "\n";
 		//std::cout << "hereee\n";
 		//std::cout << "i: " << i << "\n";
 		//fast_poly_multiplication(dst, dst, _inverse_temporary1, std::min((unsigned)(1 << i), mod));
@@ -974,3 +1008,36 @@ std::vector<unsigned>& galois_field::remainder_of_power(std::vector<unsigned>& a
 	return a;
 }
 
+std::vector<unsigned>& galois_field::formal_derivate(std::vector<unsigned>& src, std::vector<unsigned>& dst) {
+	std::fill(dst.begin(), dst.end(), 0);
+	for (size_t i = 1; i < src.size(); i += 2) {
+		dst[i - 1] = src[i];
+	}
+	return dst;
+}
+
+std::vector<unsigned>& galois_field::translate_bit_vector(linalg::bit_vector& src, std::vector<unsigned>& dst) {
+	unsigned cur = 0;
+	for (size_t i = 0; i < src.size(); ++i) {
+		cur += src[i] << (i % _m);
+		if (i % _m == _m - 1) {
+			dst[i / _m] = cur;
+			cur = 0;
+		}
+	}
+	if (src.size() % _m != 0) {
+		dst[src.size() / _m + 1] = cur;
+	}
+	return dst;
+
+}
+linalg::bit_vector& galois_field::translate_to_bit_vector(std::vector<unsigned>& src, linalg::bit_vector& dst) {
+	unsigned cur = 0;
+	for (size_t i = 0; i < dst.size(); ++i) {
+		if (i % _m == 0) {
+			cur = src[i / _m];
+		}
+		dst.set(i, (cur >> (i % _m)) & 1);
+	}
+	return dst;
+}

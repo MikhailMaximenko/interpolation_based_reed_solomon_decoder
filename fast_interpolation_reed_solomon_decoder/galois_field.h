@@ -1,4 +1,5 @@
 #pragma once
+#include"linalg.h"
 #include <cstddef>
 #include<vector>
 #include<array>
@@ -90,6 +91,11 @@ public:
 	std::vector<unsigned>& inv_poly(std::vector<unsigned>&, std::vector<unsigned>&, unsigned);
 	void assign_zero(std::vector<unsigned>&);
 
+
+	std::vector<unsigned>& translate_bit_vector(linalg::bit_vector&, std::vector<unsigned>&);
+	linalg::bit_vector& translate_to_bit_vector(std::vector<unsigned>&, linalg::bit_vector&);
+
+	std::vector<unsigned>& formal_derivate(std::vector<unsigned>&, std::vector<unsigned>&);
 public:
 	std::vector<unsigned> _a_tmp;
 	std::vector<unsigned> _b_tmp;

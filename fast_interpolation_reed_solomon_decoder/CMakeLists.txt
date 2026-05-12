@@ -6,7 +6,9 @@
 add_executable (fast_interpolation_reed_solomon_decoder 
 	"fast_interpolation_reed_solomon_decoder.cpp" "fast_interpolation_reed_solomon_decoder.h" 
 	"galois_field.h" "galois_field.cpp" 
-	"fft.h" "FFT7.CPP" "FFT63.CPP" "FFT127.CPP" "FFT255.CPP" "FFT511.CPP")
+	"fft.h" "FFT7.CPP" "FFT63.CPP" "FFT127.CPP" "FFT255.CPP" "FFT511.CPP" "linalg.h" "linalg.cpp"
+	"socow_vector.h" "berlecamp_massey_decoder.h" "berlecamp_massey_decoder.cpp"
+)
 
 if (CMAKE_VERSION VERSION_GREATER 3.12)
   set_property(TARGET fast_interpolation_reed_solomon_decoder PROPERTY CXX_STANDARD 20)

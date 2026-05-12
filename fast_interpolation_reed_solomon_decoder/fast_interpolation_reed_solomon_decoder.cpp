@@ -13,7 +13,7 @@ InterpolationBasedFastRSDecoder::InterpolationBasedFastRSDecoder(galois_field co
 	, _k(k)
 	, _t((n - k) / 2)
 {
-	size_t sz = 3 * (_n + 1);
+	size_t sz = (_n + 1);
 	for (auto& v : _tmp) {
 		v.resize(sz);
 	}
@@ -53,7 +53,9 @@ void InterpolationBasedFastRSDecoder::decode(std::vector<unsigned>& cw) {
 	std::reverse(_tmp[1].begin(), _tmp[1].begin() + 2 * max_t);
 	//_tmp[1][max_t - 1] = 1;	
 	_tmp[2][2 * max_t] = 1;
+	std::cout << "here1\n";
 	_gf.EMGCD(_tmp[2], _tmp[1], _emgcd_tmp, 0);
+	std::cout << "here2\n";
 
 	//_gf.print_poly(_tmp[0]);
 	//_gf.print_poly(_tmp[1]);
@@ -152,7 +154,7 @@ std::vector<unsigned> generate_errors(unsigned n, unsigned t) {
 
 void test_decoder(galois_field & gf, unsigned n, unsigned k, unsigned iters) {
 	InterpolationBasedFastRSDecoder decoder(gf, n, k);
-	for (size_t t = 0; t <= (n - k) / 2; ++t) {
+	for (size_t t = 25; t <= 30; ++t) {
 		std::cout << "testing t: " << t << "\n";
 		decoder._t = t;
 		for (size_t _ = 0; _ < iters; ++_) {
@@ -192,12 +194,15 @@ int main()
 	//galois_field gf(3, 0xb, 3);
 
 	// 2 2
-	galois_field gf(6, 0x43, 6);
+	galois_field gf(3, 0xb, 3);
 
 	//test_decoder(gf, 7, 1, 10);
-	test_decoder(gf, 63, 32, 10);
+	//test_decoder(gf, 511, 256, 10);
 
-	//std::vector<unsigned> a(80), b(80), c(80), d(80), e(80), f(80);
+	std::vector<unsigned> a(7), b(7), c(80), d(80), e(80), f(80);
+	a[1] = 1;
+	gf.DFT(a, b);
+	gf.print_poly(b);
 	//a = { 38, 45, 31, 40, 3, 55, 51, 6, 50, 30, 31, 62, 5, 44, 38, 42, 18, 33, 47, 30, 39, 11, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
 	//a[0] = 2;
 	//a[1] = 2;
