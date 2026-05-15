@@ -65,22 +65,22 @@ void galois_field::init() {
 			}
 		}
 	}
-	std::cout << "s:" << _s.size() << "\n";
+	//std::cout << "s:" << _s.size() << "\n";
 	for (size_t level = 0; level < _m; ++level) {
-		std::cout << level << ": ";
+		//std::cout << level << ": ";
 		unsigned inv = inverse(_s[level][1 << level]);
 		for (size_t i = 0; i < _q; ++i) {
-			_s[level][i] = multiply(_s[level][i], inv);
-			std::cout << _s[level][i] << " ";
+			//_s[level][i] = multiply(_s[level][i], inv);
+			//std::cout << _s[level][i] << " ";
 		}
-		std::cout << "\n";
+		//std::cout << "\n";
 	}
 
-	std::cout << 3 << ": ";
+	//std::cout << 3 << ": ";
 	for (size_t i = 0; i < _q; ++i) {
-		std::cout << _s[3][i] << " ";
+		//std::cout << _s[3][i] << " ";
 	}
-	std::cout << "\n";
+	//std::cout << "\n";
 	size_t tmp_sizes = _q;
 	_emgcd_tmp_polynomials.resize(40);
 	for (auto& tmp : _emgcd_tmp_polynomials) {
@@ -1040,4 +1040,15 @@ linalg::bit_vector& galois_field::translate_to_bit_vector(std::vector<unsigned>&
 		dst.set(i, (cur >> (i % _m)) & 1);
 	}
 	return dst;
+}
+
+unsigned galois_field::substitute_poly(std::vector<unsigned>& poly, unsigned val) {
+	unsigned result = 0;
+	for (ptrdiff_t i = poly.size() - 1; i >= 0; --i) {
+		result = add(result, poly[i]);
+		result = multiply(result, val);
+
+	}
+	return result;
+
 }

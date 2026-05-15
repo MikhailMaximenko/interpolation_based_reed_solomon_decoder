@@ -96,6 +96,7 @@ public:
 	linalg::bit_vector& translate_to_bit_vector(std::vector<unsigned>&, linalg::bit_vector&);
 
 	std::vector<unsigned>& formal_derivate(std::vector<unsigned>&, std::vector<unsigned>&);
+	unsigned substitute_poly(std::vector<unsigned>& , unsigned);
 public:
 	std::vector<unsigned> _a_tmp;
 	std::vector<unsigned> _b_tmp;

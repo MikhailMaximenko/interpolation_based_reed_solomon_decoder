@@ -7,6 +7,7 @@
 #include "berlecamp_massey_decoder.h"
 #include <cassert>
 #include <bit>
+#include <fstream>
 
 InterpolationBasedFastRSDecoder::InterpolationBasedFastRSDecoder(galois_field const& gf, unsigned n, unsigned k)
 	: _gf(gf)
@@ -34,7 +35,7 @@ std::vector<unsigned> InterpolationBasedFastRSDecoder::encode(std::vector<unsign
 
 void InterpolationBasedFastRSDecoder::decode(std::vector<unsigned>& cw) {
 	// g <=> tmp[0]
-	_gf.print_poly(cw);
+	//_gf.print_poly(cw);
 	_gf.IDFT(cw, _tmp[0]);
 	if (_gf.degree(_tmp[0]) <= _k) {
 		return ;
@@ -67,40 +68,40 @@ void InterpolationBasedFastRSDecoder::decode(std::vector<unsigned>& cw) {
 	/*if (fst_deg < max_t) {
 		t = fst_deg;
 	}*/
-	std::cout << t << " " << _t << "\n";
-	assert(t == _t);
-	if (t < _t) {
+	std::cout << "errors amount: " << t << "\n";
+	//assert(t == _t);
+	/*if (t < _t) {
 		_gf.print_poly(_tmp[0]);
 		_gf.print_poly(_tmp[1]);
 		_gf.print_poly(_emgcd_tmp[0].first);
 		_gf.print_poly(_emgcd_tmp[0].second);
 		_gf.print_poly(_emgcd_tmp[1].second);
 		_gf.print_poly(_emgcd_tmp[2].second);
-	}
+	}*/
 	std::fill(_tmp[3].begin(), _tmp[3].end(), 0);
 	std::fill(_tmp[2].begin(), _tmp[2].end(), 0);
 	//std::fill(_tmp[2].begin(), _tmp[2].end(), 0);
 	std::fill(_tmp[1].begin(), _tmp[1].end(), 0);
 
-	if (_t != 0) {
-		std::copy(_tmp[0].begin() + _n - 2 * _t + 1, _tmp[0].begin() + _n, _tmp[1].begin());
-		std::copy(_tmp[0].begin() + _n - 2 * _t, _tmp[0].begin() + _n - _t, _tmp[2].begin());
-		_gf.SOLVE_TOEPITZ(_tmp[1], _tmp[2], _t - 1, _tmp[3]);
+	if (t != 0) {
+		std::copy(_tmp[0].begin() + _n - 2 * t + 1, _tmp[0].begin() + _n, _tmp[1].begin());
+		std::copy(_tmp[0].begin() + _n - 2 * t, _tmp[0].begin() + _n - t, _tmp[2].begin());
+		_gf.SOLVE_TOEPITZ(_tmp[1], _tmp[2], t - 1, _tmp[3]);
 
 		// tmp[3] <=> eta
-		std::copy(_tmp[3].begin(), _tmp[3].begin() + _t, _tmp[4].begin());
-		std::copy(_tmp[0].begin() + _k, _tmp[0].begin() + _k + _t, _tmp[5].begin());
-		std::reverse(_tmp[4].begin(), _tmp[4].begin() + _t + 1); // D(x)
+		std::copy(_tmp[3].begin(), _tmp[3].begin() + t, _tmp[4].begin());
+		std::copy(_tmp[0].begin() + _k, _tmp[0].begin() + _k + t, _tmp[5].begin());
+		std::reverse(_tmp[4].begin(), _tmp[4].begin() + t + 1); // D(x)
 		//std::cout << "before reverse:\n";
 		//std::cout << "k: " << _k << " t: " << _t << "\n";
 		//_gf.print_poly(_tmp[0]);
 		//_gf.print_poly(_tmp[5]);
-		std::reverse(_tmp[5].begin(), _tmp[5].begin() + _t); // h0 .. h_(t-1)
+		std::reverse(_tmp[5].begin(), _tmp[5].begin() + t); // h0 .. h_(t-1)
 		_tmp[4][0] = 1;
-		_gf.inv_poly(_tmp[4], _tmp[6], _k + _t);
-		_gf.remainder_of_power(_gf.fast_poly_multiplication(_tmp[5], _tmp[4], _tmp[8]), _t);
-		_gf.remainder_of_power(_gf.fast_poly_multiplication(_tmp[6], _tmp[8], _tmp[7]), _k + _t);
-		std::reverse(_tmp[7].begin(), _tmp[7].begin() + _t + _k);
+		_gf.inv_poly(_tmp[4], _tmp[6], _k + t);
+		_gf.remainder_of_power(_gf.fast_poly_multiplication(_tmp[5], _tmp[4], _tmp[8]), t);
+		_gf.remainder_of_power(_gf.fast_poly_multiplication(_tmp[6], _tmp[8], _tmp[7]), _k + t);
+		std::reverse(_tmp[7].begin(), _tmp[7].begin() + t + _k);
 		std::copy(_tmp[7].begin(), _tmp[7].begin() + _k, _tmp[0].begin());
 		//std::cout << "got:\n";
 			//_gf.print_poly(_tmp[3]);
@@ -152,41 +153,44 @@ std::vector<unsigned> generate_errors(unsigned n, unsigned t) {
 }
 
 
-
-void test_decoder(galois_field & gf, unsigned n, unsigned k, unsigned iters) {
-	encoding::bch_decoder decoder(gf, n, k, 2, n - k + 1, 1);
-	for (size_t t = 0; t <= (n - k)/2; ++t) {
+template<typename DecType>
+void test_decoder(DecType & decoder, unsigned n, unsigned k, unsigned t, unsigned iters, std::ofstream& metrics_dump) {
+	//encoding::bch_decoder decoder(gf, n, k, 2, n - k + 1, 1);
+	//InterpolationBasedFastRSDecoder decoder(gf, n, k);
+	//for (size_t t = (n - k ) / 2 - 10; t <= (n - k)/2; ++t) {
 		std::cout << "testing t: " << t << "\n";
 		//decoder._t = t;
 		for (size_t _ = 0; _ < iters; ++_) {
 			auto msg = generate_message(n, k);
-			std::vector<unsigned> encoded(n);
-			gf.DFT(msg, encoded);
+			std::vector<unsigned> encoded = decoder.encode(msg);
+			//gf.DFT(msg, encoded);
 			//auto encoded = decoder.encode(msg);
 			auto errors = generate_errors(n, t);
 			std::vector<unsigned> msg_with_errors(n);
-			gf.add_poly(encoded, errors, msg_with_errors, 0);
-			size_t sz = n * gf._m;
-			linalg::bit_vector vt(sz, false);
+			decoder._gf.add_poly(encoded, errors, msg_with_errors, 0);
+			//size_t sz = n * gf._m;
+			//linalg::bit_vector vt(sz, false);
 			decoder._gf.reset_counters();
-			gf.translate_to_bit_vector(msg_with_errors, vt);
-			decoder._decoding.cp(vt);
-			auto res = decoder.decode();
-			gf.translate_bit_vector(res, msg_with_errors);
+			decoder.decode(msg_with_errors);
+			//gf.translate_to_bit_vector(msg_with_errors, vt);
+			//decoder._decoding.cp(vt);
+			//auto res = decoder.decode();
+			//gf.translate_bit_vector(res, msg_with_errors);
 
 			std::cout << "additions: " << decoder._gf._additions << " multiplications: " << decoder._gf._multiplications << "\n";
+			metrics_dump << n << " " << k << " " << t << " " << decoder._gf._additions << " " << decoder._gf._multiplications << "\n";
 			decoder._gf.reset_counters();
 			for (size_t i = 0; i < n; ++i) {
 				if (encoded[i] != msg_with_errors[i]) {
 					std::cout << "decoding error occured with t:"<< t << "\n";
-					gf.print_poly(msg);
-					gf.print_poly(encoded);
-					gf.print_poly(errors);
-					gf.print_poly(msg_with_errors);
+					decoder._gf.print_poly(msg);
+					decoder._gf.print_poly(encoded);
+					decoder._gf.print_poly(errors);
+					decoder._gf.print_poly(msg_with_errors);
 					return;
 				}
 			}
-		}
+		//}
 		//break;
 	}
 	std::cout << "tests passed\n";
@@ -194,19 +198,73 @@ void test_decoder(galois_field & gf, unsigned n, unsigned k, unsigned iters) {
 
 }
 
-int main()
-{
+// 1: output
+// 2: code rate
+// 3: error rate
+// 4: decoder type: 0 - interpolation decoder, 1 - berlecamp-massey decoder
+int main(int argc, char* argv[])
+{	
+	double k_rate, err_rate;
+	int type;
+	std::ofstream out("interpolation_decoder_results_0_25rate_max_errs .txt");
+	//out << "hello\n";
+	if (false) {
+		if (argc != 4) {
+			std::cout << "expected 3 args: output file, code rate (from 0 to 1), error rate (from 0 to 1)\n";
+			return -1;
+		}
+		try {
+			k_rate = std::stod(argv[2]);
+			err_rate = std::stod(argv[3]);
+			type = std::stoi(argv[4]);
+		}
+		catch (std::invalid_argument const& e) {
+			std::cout << "could not parse numeric args: " << e.what();
+			return -1;
+		}
+	}
+	else {
+		k_rate = 0.25;
+		err_rate = 0.9;
+		type = 0;
+	}
+	if (out.bad()) {
+		std::cout << "could not open input file\n";
+		return -1;
+	}
+
+	out << "n, k, err num, additions, multiplications\n";
 	//galois_field gf2(7, 0x83, 7);
 
 	//test_decoder(gf2, 127, 11, 15);
 
 	//galois_field gf(3, 0xb, 3);
-
+	std::vector<unsigned> field_sizes = { 3, 6, 7, 9 };
+	std::vector<unsigned> field_generators = { 0xb, 0x43, 0x83, 0x211 };
 	// 2 2
-	galois_field gf(3, 0xb, 3);
-
-	test_decoder(gf, 7, 1, 10);
-	//test_decoder(gf, 511, 256, 10);
+	for (size_t i = 0; i < field_sizes.size(); ++i) {
+		galois_field gf(field_sizes[i], field_generators[i], field_sizes[i]);
+		unsigned n = (1 << field_sizes[i]) - 1;
+		unsigned k = n * k_rate;
+		unsigned t = ((n - k) / 2) * err_rate;
+		if (type == 0) {
+			InterpolationBasedFastRSDecoder decoder(gf, n, k);
+			test_decoder(decoder, n, k, t, 1, out);
+		}
+		else if (type == 1) {
+			encoding::bch_decoder decoder(gf, n, k, 2, n - k + 1, 1);
+			test_decoder(decoder, n, k, t, 1, out);
+			//test_decoder(decoder, 511, 256, t, 10, out);
+		}
+		else {
+			std::cout << "unknown decoder type\n";
+			return -1;
+		}
+	}
+	//galois_field gf(9, 0x211, 9);
+	//InterpolationBasedFastRSDecoder decoder(gf, 511, 256);
+	//test_decoder(gf, 7, 1, 10);
+	//test_decoder(decoder, 511, 256, 10);
 
 	//std::vector<unsigned> a(7), b(7), c(80), d(80), e(80), f(80);
 	//a[1] = 1;
@@ -267,8 +325,3 @@ int main()
 
 	return 0;
 }
-//a: 38, 45, 31, 40, 3, 55, 51, 6, 50, 30, 31, 62, 5, 44, 38, 42, 18, 33, 47, 30, 39, 11, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
-//b: 56 0 60 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-//3 2
-//got: 24 46 25 47 1 19 58 23 49 41 35 31 23 28 59 32 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-//expected: 50 48 25 47 1 19 58 23 49 3 61 31 23 28 59 32 13 44 41 19 51 52 16 46 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0

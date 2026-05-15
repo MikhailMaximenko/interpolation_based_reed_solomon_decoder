@@ -47,9 +47,11 @@ namespace encoding {
 
         size_t berlecamp_massey(std::vector<unsigned>&);
 
-        void pgz();
+        std::vector<unsigned>& pgz(std::vector<unsigned>&);
 
         linalg::bit_vector decode();
+        std::vector<unsigned>& decode(std::vector<unsigned>&);
+        std::vector<unsigned> encode(std::vector<unsigned>&);
 
         linalg::bit_vector decode(std::vector<double> const& signals);
 
