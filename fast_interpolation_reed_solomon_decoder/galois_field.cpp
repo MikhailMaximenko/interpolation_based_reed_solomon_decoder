@@ -37,7 +37,7 @@ galois_field::galois_field(unsigned m, unsigned gen_poly, unsigned poly_size)
 void galois_field::init() {
 	_const2[0] = 2;
 	unsigned x = 1;
-	_exp_table[0] = 0;
+	_exp_table[_n] = 1;
 	//_log_table[0] = 0;
 	for (int i = 0; i < _n; i++) {
 		_exp_table[i] = x;
@@ -81,91 +81,94 @@ void galois_field::init() {
 	//	//std::cout << _s[3][i] << " ";
 	//}
 	////std::cout << "\n";
-	//size_t tmp_sizes = _q;
-	//_emgcd_tmp_polynomials.resize(40);
-	//for (auto& tmp : _emgcd_tmp_polynomials) {
-	//	for (auto& v : tmp) {
-	//		v.resize(tmp_sizes);
-	//	}
-	//}
+	size_t tmp_sizes = _q;
+	_emgcd_tmp_polynomials.resize(20);
+	for (auto& tmp : _emgcd_tmp_polynomials) {
+		for (auto& v : tmp) {
+			v.resize(tmp_sizes);
+		}
+	}
 
-	//_emgcd_tmp_result.resize(40);
-	//for (auto& tmp : _emgcd_tmp_result) {
-	//	for (auto& v : tmp) {
-	//		v.first.resize(tmp_sizes);
-	//		v.second.resize(tmp_sizes);
-	//	}
-	//}
-	//_emgcd_tmp_result2.resize(40);
-	//for (auto& tmp : _emgcd_tmp_result2) {
-	//	for (auto& v : tmp) {
-	//		v.first.resize(tmp_sizes);
-	//		v.second.resize(tmp_sizes);
-	//	}
-	//}
+	_emgcd_tmp_result.resize(20);
+	for (auto& tmp : _emgcd_tmp_result) {
+		for (auto& v : tmp) {
+			v.first.resize(tmp_sizes);
+			v.second.resize(tmp_sizes);
+		}
+	}
+	_emgcd_tmp_result2.resize(20);
+	for (auto& tmp : _emgcd_tmp_result2) {
+		for (auto& v : tmp) {
+			v.first.resize(tmp_sizes);
+			v.second.resize(tmp_sizes);
+		}
+	}
 
-	//_dft_tmp.resize(_m + 1);
-	//_idft_tmp.resize(_m + 1);
-	//for (auto& a : _dft_tmp) {
-	//	a.resize(tmp_sizes);
-	//	for (auto& v : a) {
-	//		v.resize(tmp_sizes);
-	//	}
-	//}
-	//for (auto& a : _idft_tmp) {
-	//	a.resize(tmp_sizes);
-	//	for (auto& v : a) {
-	//		v.resize(tmp_sizes);
-	//	}
-	//}
+	_dft_tmp.resize(_m + 1);
+	_idft_tmp.resize(_m + 1);
+	for (auto& a : _dft_tmp) {
+		a.resize(tmp_sizes);
+		for (auto& v : a) {
+			v.resize(tmp_sizes);
+		}
+	}
+	for (auto& a : _idft_tmp) {
+		a.resize(tmp_sizes);
+		for (auto& v : a) {
+			v.resize(tmp_sizes);
+		}
+	}
 
-	//for (auto& v : _ad_tmp_polinomyals) {
-	//	v.resize(tmp_sizes);
-	//}
-	//for (auto& tmp : _ad_tmp_emgcd_results) {
-	//	for (auto& v : tmp) {
-	//		v.first.resize(tmp_sizes);
-	//		v.second.resize(tmp_sizes);
-	//	}
-	//}
+	for (auto& v : _ad_tmp_polinomyals) {
+		v.resize(tmp_sizes);
+	}
+	for (auto& tmp : _ad_tmp_emgcd_results) {
+		for (auto& v : tmp) {
+			v.first.resize(tmp_sizes);
+			v.second.resize(tmp_sizes);
+		}
+	}
 
-	//for (auto& v : _gcd_tmp) {
-	//	v.first.resize(3 * _q);
-	//	v.second.resize(3 * _q);
-	//}
-	//for (auto& tmp : _solve_toeplitz_tmp) {
-	//	//for (auto& v : tmp) {
-	//	tmp.resize(tmp_sizes);
-	//		//v.second.resize(_n);
-	//	//}
-	//}
+	for (auto& v : _gcd_tmp) {
+		v.first.resize(3 * _q);
+		v.second.resize(3 * _q);
+	}
+	for (auto& tmp : _solve_toeplitz_tmp) {
+		//for (auto& v : tmp) {
+		tmp.resize(tmp_sizes);
+			//v.second.resize(_n);
+		//}
+	}
 
-	//std::cout << "initting mult tmps\n";
-
-	//for (size_t i = 0; i < _schonhage_dft_tmp.size(); ++i) {
-	//	_schonhage_dft_tmp[i].resize(8 * _q);
-	//	for (auto& v : _schonhage_dft_tmp[i]) {
-	//		v.resize(8 * _q);
-	//	}
-	//	
-	//	for (auto& v : _schonhage_convolution_tmp[i]) {
-	//		v.resize(8 * _q);
-	//	}
-	//		//std::cout << _schonhage_dft_results_tmp.size() << " here\n";
-	//	_schonhage_dft_results_tmp[i].resize(10);
-	//	for (auto& v : _schonhage_dft_results_tmp[i]) {
-	//		//std::cout << "here!\n";
-	//		v.resize(8 * _q);
-	//		/*for (auto& u : v) {
-	//			u.resize(10 * _q);
-	//		}*/
-	//		//std::cout << "hh " << v.size() << std::endl;
-	//	}
-	//	//_schonhage_strassen_tmp[i].resize(10);
-	//	for (auto& v : _schonhage_strassen_tmp[i]) {
-	//		v.resize(8 * _q);
-	//	}
-	//}
+	std::cout << "initting mult tmps\n";
+	size_t size = 6 * _q;
+	for (size_t i = 0; i < _schonhage_dft_tmp.size(); ++i) {
+		_schonhage_dft_tmp[i].resize(size);
+		for (auto& v : _schonhage_dft_tmp[i]) {
+			v.resize(size);
+		}
+		for (auto& v : _schonhage_convolution_tmp[i]) {
+			v.resize(size);
+		}
+			//std::cout << _schonhage_dft_results_tmp.size() << " here\n";
+		_schonhage_dft_results_tmp[i].resize(10);
+		for (auto& v : _schonhage_dft_results_tmp[i]) {
+			//std::cout << "here!\n";
+			v.resize(size);
+			/*s1 /= 3;
+			++s1;*/
+			/*for (auto& u : v) {
+				u.resize(10 * _q);
+			}*/
+			//std::cout << "hh " << v.size() << std::endl;
+		}
+		//_schonhage_strassen_tmp[i].resize(10);
+		for (auto& v : _schonhage_strassen_tmp[i]) {
+			v.resize(size);
+		}
+		size /= 3;
+		++size;
+	}
 
 	std::cout << "initted\n";
 }

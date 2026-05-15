@@ -9,6 +9,8 @@ void FFT127(unsigned*, unsigned*);
 void FFT255(unsigned*, unsigned*);
 void FFT511(unsigned*, unsigned*);
 void FFT_1023(const unsigned*, unsigned*, const galois_field&);
+void FFT_2047(const unsigned*, unsigned*, const galois_field&);
+void FFT_4095(const unsigned*, unsigned*, const galois_field&);
 
 
 void inline call_fft(galois_field &gf, std::vector<unsigned>& src, std::vector<unsigned>& dst, unsigned length) {
@@ -42,5 +44,11 @@ void inline call_fft(galois_field &gf, std::vector<unsigned>& src, std::vector<u
 	}
 	if (length == 1023) {
 		FFT_1023(src.data(), dst.data(), gf);
+	}
+	if (length == 2047) {
+		FFT_2047(src.data(), dst.data(), gf);
+	}
+	if (length == 4095) {
+		FFT_4095(src.data(), dst.data(), gf);
 	}
 }

@@ -6,7 +6,7 @@
 #include <algorithm>
 
 struct galois_field
-{
+{	
 	// original field size
 	//unsigned _p;
 
@@ -22,7 +22,7 @@ struct galois_field
 	unsigned _gen_poly;
 	unsigned _poly_size;
 	std::vector<unsigned> _exp_table;
-	std::vector<int> _log_table;
+	std::vector<unsigned> _log_table;
 
 	unsigned _inverse_element; // n^(-1) (n from idft)
 

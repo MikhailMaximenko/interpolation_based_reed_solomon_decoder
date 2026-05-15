@@ -8,6 +8,7 @@ add_executable (fast_interpolation_reed_solomon_decoder
 	"galois_field.h" "galois_field.cpp" 
 	"fft.h" "FFT7.CPP" "FFT63.CPP" "FFT127.CPP" "FFT255.CPP" "FFT511.CPP" "linalg.h" "linalg.cpp"
 	"socow_vector.h" "berlecamp_massey_decoder.h" "berlecamp_massey_decoder.cpp" "FFT1023GT.cpp"
+	"FFT2047GT.cpp" "FFT4095GT.cpp"
 )
 
 if (CMAKE_VERSION VERSION_GREATER 3.12)

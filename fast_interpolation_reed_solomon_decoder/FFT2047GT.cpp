@@ -1,8 +1,8 @@
 #include <iterator>
-#include "GF.h"
-#include "codec/QaryCodec.h"
+#include "galois_field.h"
 
 
+using GFSymbol = unsigned;
 void Conv11Pre(const GFSymbol *A, GFSymbol *P)
 {
  P[25]=A[7]^A[8];
@@ -135,7 +135,7 @@ void Conv11Post(const GFSymbol *A, GFSymbol *P)
 
 }
 
-void Conv11_Apply(const GFSymbol *pA, GFSymbol *pB, const GaloisField<GFSymbol> &GF)
+void Conv11_Apply(const GFSymbol *pA, GFSymbol *pB, const galois_field &GF)
 {
 	GFSymbol T[43];
 	Conv11Pre(pA, T);
@@ -187,7 +187,7 @@ void Conv11_Apply(const GFSymbol *pA, GFSymbol *pB, const GaloisField<GFSymbol> 
 	Conv11Post(T, pB);
 };
 
-void Conv11_Apply2(const GFSymbol *pA, GFSymbol *pB, const GaloisField<GFSymbol> &GF)
+void Conv11_Apply2(const GFSymbol *pA, GFSymbol *pB, const galois_field &GF)
 {
 	GFSymbol T[43];
 	Conv11Pre(pA, T);
@@ -351,7 +351,7 @@ void A23Mul(const GFSymbol* A, GFSymbol* P)
 
 }
 
-void FFT_23(const GFSymbol *f, GFSymbol *F, const GaloisField<GFSymbol> &GF)
+void FFT_23(const GFSymbol *f, GFSymbol *F, const galois_field &GF)
 {
 	GFSymbol T[23];
 	T[0]=f[0];
@@ -1793,7 +1793,7 @@ P[20]=P[67]^T[481];
 
 }//156XOR
 
-void FFT_89(const GFSymbol *f, GFSymbol *F, const GaloisField<GFSymbol> &GF)
+void FFT_89(const GFSymbol *f, GFSymbol *F, const galois_field &GF)
 {
 	GFSymbol T[89];
 	T[0]=f[0];
@@ -1813,7 +1813,7 @@ Conv11_Apply2(std::begin({ f[33], f[66], f[43], f[86], f[83], f[77], f[65], f[41
 */
 void FFT_2047(const GFSymbol *f,///input
 	GFSymbol *F, ///output
-	const GaloisField<GFSymbol> &GF ///Galois field arithmetic
+	const galois_field &GF ///Galois field arithmetic
 )
 {
 

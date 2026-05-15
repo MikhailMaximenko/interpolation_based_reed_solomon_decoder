@@ -1,5 +1,4 @@
-#include "GF.h"
-#include "codec/QaryCodec.h"
+#include "galois_field.h"
 #include <iterator>
 // Fedorenko-Trifonov's Direct FFT for GF(2^8) and primitive polynomial 0x11d
 //#define MULTIPLY(A,B,C){if (!A||!B) C=0;else {int Log=LogTable[A]+LogTable[B];if (Log>=(FIELDSIZE-1))Log-=(FIELDSIZE-1);C=GF[1+Log];};};
@@ -21,7 +20,7 @@ void Conv2Post(const GFSymbol *A, GFSymbol *P)
         P[1]=  A[0] ^ A[2];
 };
 
-void Conv2_Apply(const GFSymbol *pA, GFSymbol *pB, const GaloisField<GFSymbol> &GF)
+void Conv2_Apply(const GFSymbol *pA, GFSymbol *pB, const galois_field &GF)
 {
   GFSymbol T[3];
   Conv2Pre(pA,T);
@@ -51,7 +50,7 @@ void Conv3Pre(const GFSymbol *A, GFSymbol *P)
 
 
 
-void Conv3_Apply(const GFSymbol *pA, GFSymbol *pB, const GaloisField<GFSymbol> &GF)
+void Conv3_Apply(const GFSymbol *pA, GFSymbol *pB, const galois_field &GF)
 {
   GFSymbol T[4];
  Conv3Pre(pA,T);
@@ -111,7 +110,7 @@ P[0]=P[0]^T[4];
 P[0]=P[0]^T[6];
 }
 
-void Conv6_Apply(const GFSymbol *pA, GFSymbol *pB, const GaloisField<GFSymbol> &GF)
+void Conv6_Apply(const GFSymbol *pA, GFSymbol *pB, const galois_field &GF)
 {
    GFSymbol T[16];
    Conv6Pre(pA,T);
@@ -676,7 +675,7 @@ void A63Mul(const GFSymbol *A, GFSymbol *P)
 	T[221] = P[10] ^ T[224];
 	P[31] = P[52] ^ T[221];
 }
-void FFT_63(const GFSymbol *f, GFSymbol *F, const GaloisField<GFSymbol> &GF)
+void FFT_63(const GFSymbol *f, GFSymbol *F, const galois_field &GF)
 {
 	GFSymbol T[63];
 
@@ -728,7 +727,7 @@ P[2]=P[2]^T[1];
 
 }
 
-void Conv4_Apply(const GFSymbol *pA, GFSymbol *pB, const GaloisField<GFSymbol> &GF)
+void Conv4_Apply(const GFSymbol *pA, GFSymbol *pB, const galois_field &GF)
 {
   GFSymbol T[9];
   Conv4Pre(pA,T);
@@ -2214,7 +2213,7 @@ P[9] = P[5] ^ T[27];
 
 }
 
-void Conv12_Apply(const GFSymbol *pA, GFSymbol *pB, const GaloisField<GFSymbol> &GF)
+void Conv12_Apply(const GFSymbol *pA, GFSymbol *pB, const galois_field &GF)
 {
  GFSymbol T[36];
  Conv12Pre(pA,T);
@@ -2261,7 +2260,7 @@ void Conv12_Apply(const GFSymbol *pA, GFSymbol *pB, const GaloisField<GFSymbol> 
 
 void FFT_65(const GFSymbol *f,///input
          GFSymbol *F,
-         const GaloisField<GFSymbol> &GF)
+         const galois_field &GF)
 {
  GFSymbol T[65];
 T[0]=f[0];
@@ -2282,7 +2281,7 @@ using namespace FFT4095;
 void FFT_4095(const GFSymbol *f,///input
          GFSymbol *F,
          
-         const GaloisField<GFSymbol> &GF)
+         const galois_field &GF)
 {
 
 	GFSymbol T[65];
