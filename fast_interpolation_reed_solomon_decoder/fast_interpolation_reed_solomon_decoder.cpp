@@ -9,8 +9,8 @@
 #include <bit>
 #include <fstream>
 
-InterpolationBasedFastRSDecoder::InterpolationBasedFastRSDecoder(galois_field const& gf, unsigned n, unsigned k)
-	: _gf(gf)
+InterpolationBasedFastRSDecoder::InterpolationBasedFastRSDecoder(galois_field && gf, unsigned n, unsigned k)
+	: _gf(std::move(gf))
 	, _n(n)
 	, _k(k)
 	, _t((n - k) / 2)
@@ -224,9 +224,9 @@ int main(int argc, char* argv[])
 		}
 	}
 	else {
-		k_rate = 0.25;
+		k_rate = 0.5;
 		err_rate = 0.9;
-		type = 0;
+		type = 1;
 	}
 	if (out.bad()) {
 		std::cout << "could not open input file\n";
@@ -239,37 +239,46 @@ int main(int argc, char* argv[])
 	//test_decoder(gf2, 127, 11, 15);
 
 	//galois_field gf(3, 0xb, 3);
-	std::vector<unsigned> field_sizes = { 3, 6, 7, 9 };
-	std::vector<unsigned> field_generators = { 0xb, 0x43, 0x83, 0x211 };
-	// 2 2
-	for (size_t i = 0; i < field_sizes.size(); ++i) {
-		galois_field gf(field_sizes[i], field_generators[i], field_sizes[i]);
-		unsigned n = (1 << field_sizes[i]) - 1;
-		unsigned k = n * k_rate;
-		unsigned t = ((n - k) / 2) * err_rate;
-		if (type == 0) {
-			InterpolationBasedFastRSDecoder decoder(gf, n, k);
-			test_decoder(decoder, n, k, t, 1, out);
-		}
-		else if (type == 1) {
-			encoding::bch_decoder decoder(gf, n, k, 2, n - k + 1, 1);
-			test_decoder(decoder, n, k, t, 1, out);
-			//test_decoder(decoder, 511, 256, t, 10, out);
-		}
-		else {
-			std::cout << "unknown decoder type\n";
-			return -1;
-		}
-	}
-	//galois_field gf(9, 0x211, 9);
+	//std::vector<unsigned> field_sizes = { 3, 6, 7, 10 };
+	//std::vector<unsigned> field_generators = { 0xb, 0x43, 0x83, 0x2011 };
+	//// 2 2
+	//for (size_t i = 0; i < field_sizes.size(); ++i) {
+	//	galois_field gf(field_sizes[i], field_generators[i], field_sizes[i]);
+	//	unsigned n = (1 << field_sizes[i]) - 1;
+	//	unsigned k = n * k_rate;
+	//	unsigned t = ((n - k) / 2) * err_rate;
+	//	if (type == 0) {
+	//		InterpolationBasedFastRSDecoder decoder(std::move(gf), n, k);
+	//		test_decoder(decoder, n, k, t, 1, out);
+	//	}
+	//	else if (type == 1) {
+	//		encoding::bch_decoder decoder(std::move(gf), n, k, 2, n - k + 1, 1);
+	//		std::cout << "here\n";
+	//		test_decoder(decoder, n, k, t, 1, out);
+	//		//test_decoder(decoder, 511, 256, t, 10, out);
+	//	}
+	//	else {
+	//		std::cout << "unknown decoder type\n";
+	//		return -1;
+	//	}
+	//}
 	//InterpolationBasedFastRSDecoder decoder(gf, 511, 256);
 	//test_decoder(gf, 7, 1, 10);
 	//test_decoder(decoder, 511, 256, 10);
 
-	//std::vector<unsigned> a(7), b(7), c(80), d(80), e(80), f(80);
-	//a[1] = 1;
-	//gf.DFT(a, b);
-	//gf.print_poly(b);
+	std::vector<unsigned> a(1024), b(1024), c(80), d(80), e(80), f(80);
+	for (size_t i = 1024; i < 2048; ++i) {
+		galois_field gf(10, 2011, 10);
+		a[1] = 1;
+		gf.DFT(a, b);
+		std::cout << i << '\n';
+		if (b[2] == 4 && b[1] == 2) {
+			gf.print_poly(b);
+			gf.print_poly(gf._exp_table);
+			break;
+		}
+
+	}
 	//a = { 38, 45, 31, 40, 3, 55, 51, 6, 50, 30, 31, 62, 5, 44, 38, 42, 18, 33, 47, 30, 39, 11, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
 	//a[0] = 2;
 	//a[1] = 2;

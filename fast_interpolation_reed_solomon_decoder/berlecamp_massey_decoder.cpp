@@ -11,10 +11,10 @@
 namespace encoding {
 
  
-    bch_decoder::bch_decoder(galois_field const& fld, size_t n, size_t k, size_t root, size_t delta, size_t b)
+    bch_decoder::bch_decoder(galois_field fld, size_t n, size_t k, size_t root, size_t delta, size_t b)
         : _n(n)
         , _k(k)
-        , _gf(fld)
+        , _gf(std::move(fld))
         , _root(root)
         , _delta(delta)
         , _b(b)

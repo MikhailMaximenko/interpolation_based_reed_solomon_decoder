@@ -43,7 +43,7 @@ namespace encoding {
         std::vector<unsigned> _syndromes;
 
 
-        bch_decoder(galois_field const&, size_t, size_t, size_t , size_t, size_t);
+        bch_decoder(galois_field, size_t, size_t, size_t , size_t, size_t);
 
         size_t berlecamp_massey(std::vector<unsigned>&);
 

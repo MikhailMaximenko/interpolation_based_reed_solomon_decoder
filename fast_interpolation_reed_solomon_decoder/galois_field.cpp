@@ -37,7 +37,7 @@ galois_field::galois_field(unsigned m, unsigned gen_poly, unsigned poly_size)
 void galois_field::init() {
 	_const2[0] = 2;
 	unsigned x = 1;
-	_exp_table[_n] = 1;
+	_exp_table[0] = 0;
 	//_log_table[0] = 0;
 	for (int i = 0; i < _n; i++) {
 		_exp_table[i] = x;
@@ -50,122 +50,122 @@ void galois_field::init() {
 
 	// evaluate s
 	// recurrent way of evaluation may be easier
-	_s.resize(_m + 1);
-	_s.back().resize(_q);
-	_s[0].resize(_q);
-	for (size_t i = 1; i < _q; ++i) {
-		_s[0][i] = i;
-	}
-	for (size_t level = 1; level < _m; ++level) {
-		_s[level].resize(_q);
-		for (size_t i = 0; i < _q; ++i) {
-			_s[level][i] = 1;
-			for (size_t k = 0; k < (1 << level); ++k) {
-				_s[level][i] = multiply(_s[level][i], add(k, i));
-			}
-		}
-	}
-	//std::cout << "s:" << _s.size() << "\n";
-	for (size_t level = 0; level < _m; ++level) {
-		//std::cout << level << ": ";
-		unsigned inv = inverse(_s[level][1 << level]);
-		for (size_t i = 0; i < _q; ++i) {
-			//_s[level][i] = multiply(_s[level][i], inv);
-			//std::cout << _s[level][i] << " ";
-		}
-		//std::cout << "\n";
-	}
+	//_s.resize(_m + 1);
+	//_s.back().resize(_q);
+	//_s[0].resize(_q);
+	//for (size_t i = 1; i < _q; ++i) {
+	//	_s[0][i] = i;
+	//}
+	//for (size_t level = 1; level < _m; ++level) {
+	//	_s[level].resize(_q);
+	//	for (size_t i = 0; i < _q; ++i) {
+	//		_s[level][i] = 1;
+	//		for (size_t k = 0; k < (1 << level); ++k) {
+	//			_s[level][i] = multiply(_s[level][i], add(k, i));
+	//		}
+	//	}
+	//}
+	////std::cout << "s:" << _s.size() << "\n";
+	//for (size_t level = 0; level < _m; ++level) {
+	//	//std::cout << level << ": ";
+	//	unsigned inv = inverse(_s[level][1 << level]);
+	//	for (size_t i = 0; i < _q; ++i) {
+	//		//_s[level][i] = multiply(_s[level][i], inv);
+	//		//std::cout << _s[level][i] << " ";
+	//	}
+	//	//std::cout << "\n";
+	//}
 
-	//std::cout << 3 << ": ";
-	for (size_t i = 0; i < _q; ++i) {
-		//std::cout << _s[3][i] << " ";
-	}
-	//std::cout << "\n";
-	size_t tmp_sizes = _q;
-	_emgcd_tmp_polynomials.resize(40);
-	for (auto& tmp : _emgcd_tmp_polynomials) {
-		for (auto& v : tmp) {
-			v.resize(tmp_sizes);
-		}
-	}
+	////std::cout << 3 << ": ";
+	//for (size_t i = 0; i < _q; ++i) {
+	//	//std::cout << _s[3][i] << " ";
+	//}
+	////std::cout << "\n";
+	//size_t tmp_sizes = _q;
+	//_emgcd_tmp_polynomials.resize(40);
+	//for (auto& tmp : _emgcd_tmp_polynomials) {
+	//	for (auto& v : tmp) {
+	//		v.resize(tmp_sizes);
+	//	}
+	//}
 
-	_emgcd_tmp_result.resize(40);
-	for (auto& tmp : _emgcd_tmp_result) {
-		for (auto& v : tmp) {
-			v.first.resize(tmp_sizes);
-			v.second.resize(tmp_sizes);
-		}
-	}
-	_emgcd_tmp_result2.resize(40);
-	for (auto& tmp : _emgcd_tmp_result2) {
-		for (auto& v : tmp) {
-			v.first.resize(tmp_sizes);
-			v.second.resize(tmp_sizes);
-		}
-	}
+	//_emgcd_tmp_result.resize(40);
+	//for (auto& tmp : _emgcd_tmp_result) {
+	//	for (auto& v : tmp) {
+	//		v.first.resize(tmp_sizes);
+	//		v.second.resize(tmp_sizes);
+	//	}
+	//}
+	//_emgcd_tmp_result2.resize(40);
+	//for (auto& tmp : _emgcd_tmp_result2) {
+	//	for (auto& v : tmp) {
+	//		v.first.resize(tmp_sizes);
+	//		v.second.resize(tmp_sizes);
+	//	}
+	//}
 
-	_dft_tmp.resize(_m + 1);
-	_idft_tmp.resize(_m + 1);
-	for (auto& a : _dft_tmp) {
-		a.resize(tmp_sizes);
-		for (auto& v : a) {
-			v.resize(tmp_sizes);
-		}
-	}
-	for (auto& a : _idft_tmp) {
-		a.resize(tmp_sizes);
-		for (auto& v : a) {
-			v.resize(tmp_sizes);
-		}
-	}
+	//_dft_tmp.resize(_m + 1);
+	//_idft_tmp.resize(_m + 1);
+	//for (auto& a : _dft_tmp) {
+	//	a.resize(tmp_sizes);
+	//	for (auto& v : a) {
+	//		v.resize(tmp_sizes);
+	//	}
+	//}
+	//for (auto& a : _idft_tmp) {
+	//	a.resize(tmp_sizes);
+	//	for (auto& v : a) {
+	//		v.resize(tmp_sizes);
+	//	}
+	//}
 
-	for (auto& v : _ad_tmp_polinomyals) {
-		v.resize(tmp_sizes);
-	}
-	for (auto& tmp : _ad_tmp_emgcd_results) {
-		for (auto& v : tmp) {
-			v.first.resize(tmp_sizes);
-			v.second.resize(tmp_sizes);
-		}
-	}
+	//for (auto& v : _ad_tmp_polinomyals) {
+	//	v.resize(tmp_sizes);
+	//}
+	//for (auto& tmp : _ad_tmp_emgcd_results) {
+	//	for (auto& v : tmp) {
+	//		v.first.resize(tmp_sizes);
+	//		v.second.resize(tmp_sizes);
+	//	}
+	//}
 
-	for (auto& v : _gcd_tmp) {
-		v.first.resize(3 * _q);
-		v.second.resize(3 * _q);
-	}
-	for (auto& tmp : _solve_toeplitz_tmp) {
-		//for (auto& v : tmp) {
-		tmp.resize(tmp_sizes);
-			//v.second.resize(_n);
-		//}
-	}
+	//for (auto& v : _gcd_tmp) {
+	//	v.first.resize(3 * _q);
+	//	v.second.resize(3 * _q);
+	//}
+	//for (auto& tmp : _solve_toeplitz_tmp) {
+	//	//for (auto& v : tmp) {
+	//	tmp.resize(tmp_sizes);
+	//		//v.second.resize(_n);
+	//	//}
+	//}
 
-	std::cout << "initting mult tmps\n";
+	//std::cout << "initting mult tmps\n";
 
-	for (size_t i = 0; i < _schonhage_dft_tmp.size(); ++i) {
-		_schonhage_dft_tmp[i].resize(8 * _q);
-		for (auto& v : _schonhage_dft_tmp[i]) {
-			v.resize(8 * _q);
-		}
-		
-		for (auto& v : _schonhage_convolution_tmp[i]) {
-			v.resize(8 * _q);
-		}
-			//std::cout << _schonhage_dft_results_tmp.size() << " here\n";
-		_schonhage_dft_results_tmp[i].resize(10);
-		for (auto& v : _schonhage_dft_results_tmp[i]) {
-			//std::cout << "here!\n";
-			v.resize(8 * _q);
-			/*for (auto& u : v) {
-				u.resize(10 * _q);
-			}*/
-			//std::cout << "hh " << v.size() << std::endl;
-		}
-		//_schonhage_strassen_tmp[i].resize(10);
-		for (auto& v : _schonhage_strassen_tmp[i]) {
-			v.resize(8 * _q);
-		}
-	}
+	//for (size_t i = 0; i < _schonhage_dft_tmp.size(); ++i) {
+	//	_schonhage_dft_tmp[i].resize(8 * _q);
+	//	for (auto& v : _schonhage_dft_tmp[i]) {
+	//		v.resize(8 * _q);
+	//	}
+	//	
+	//	for (auto& v : _schonhage_convolution_tmp[i]) {
+	//		v.resize(8 * _q);
+	//	}
+	//		//std::cout << _schonhage_dft_results_tmp.size() << " here\n";
+	//	_schonhage_dft_results_tmp[i].resize(10);
+	//	for (auto& v : _schonhage_dft_results_tmp[i]) {
+	//		//std::cout << "here!\n";
+	//		v.resize(8 * _q);
+	//		/*for (auto& u : v) {
+	//			u.resize(10 * _q);
+	//		}*/
+	//		//std::cout << "hh " << v.size() << std::endl;
+	//	}
+	//	//_schonhage_strassen_tmp[i].resize(10);
+	//	for (auto& v : _schonhage_strassen_tmp[i]) {
+	//		v.resize(8 * _q);
+	//	}
+	//}
 
 	std::cout << "initted\n";
 }
@@ -235,12 +235,12 @@ std::vector<unsigned>& galois_field::shift_poly(std::vector<unsigned>& a) const 
 	return a;
 }
 
-unsigned galois_field::add(unsigned a, unsigned b)  { 
+unsigned galois_field::add(unsigned a, unsigned b) const { 
 	++_additions;
 	return a ^ b;
 }
 
-unsigned galois_field::multiply(unsigned a, unsigned b)  { 
+unsigned galois_field::multiply(unsigned a, unsigned b) const { 
 	++_multiplications;
 	if (a == 0 || b == 0) {
 		return 0;
@@ -248,12 +248,21 @@ unsigned galois_field::multiply(unsigned a, unsigned b)  {
 	unsigned log_sum = (_log_table[a] + _log_table[b]) % _n;
 	return _exp_table[log_sum]; 
 }
-unsigned galois_field::inverse(unsigned a)  {
+
+unsigned galois_field::multiplyConst(unsigned a, int x) const {
+	++_multiplications;
+	if (x < 0) {
+		return 0;
+	}
+	return a ? _exp_table[(_log_table[a] + x) % _n] : 0;
+	//return multiply(a, b);
+}
+unsigned galois_field::inverse(unsigned a) const {
 	assert(a != 0);
 	if (a == 0) throw std::runtime_error("division by zero");
     return _exp_table[_n - _log_table[a]];
 }
-unsigned galois_field::divide(unsigned a, unsigned b)  { 
+unsigned galois_field::divide(unsigned a, unsigned b) const { 
 	return multiply(a, inverse(b)); 
 }
 
@@ -561,7 +570,7 @@ std::vector<unsigned>& galois_field::SOLVE_TOEPITZ(std::vector<unsigned>& a, std
 
 std::vector<unsigned>& galois_field::DFT(std::vector<unsigned>& src, std::vector<unsigned>& dst) {
 	// call fft
-	call_fft(src, dst, _n, _additions, _multiplications);
+	call_fft(*this, src, dst, _n);
 	return dst;
 }
 
@@ -728,7 +737,7 @@ std::vector<unsigned>& galois_field::SCHONHAGE_STRASSEN_FFT(std::vector<unsigned
 	std::copy(a.begin(), a.begin() + std::min((size_t)2 * n, a.size()), tmp[6].begin());
 	std::copy(b.begin(), b.begin() + std::min((size_t)2 * n, b.size()), tmp[7].begin());
 
-	if (n <= 9) {
+	if (n <= 27) {
 		//std::fill(dst.begin(), dst.begin() + 4 * n, 0);
 
 		for (size_t i = 0; i < 2 * n; ++i) {

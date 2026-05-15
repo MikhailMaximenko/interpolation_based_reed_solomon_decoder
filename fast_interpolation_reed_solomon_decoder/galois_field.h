@@ -22,7 +22,7 @@ struct galois_field
 	unsigned _gen_poly;
 	unsigned _poly_size;
 	std::vector<unsigned> _exp_table;
-	std::vector<unsigned> _log_table;
+	std::vector<int> _log_table;
 
 	unsigned _inverse_element; // n^(-1) (n from idft)
 
@@ -30,10 +30,11 @@ struct galois_field
 
 	galois_field(unsigned, unsigned, unsigned);
 
-	unsigned multiply(unsigned, unsigned) ;
-	unsigned add(unsigned, unsigned) ;
-	unsigned divide(unsigned, unsigned) ;
-	unsigned inverse(unsigned) ;
+	unsigned multiply(unsigned, unsigned) const;
+	unsigned multiplyConst(unsigned, int) const;
+	unsigned add(unsigned, unsigned) const;
+	unsigned divide(unsigned, unsigned) const;
+	unsigned inverse(unsigned) const;
 
 	std::vector<unsigned>& DFT(std::vector<unsigned>&, std::vector<unsigned>&); // cyclotomic
 	std::vector<unsigned>& IDFT(std::vector<unsigned>&, std::vector<unsigned>&); // cyclotomic
@@ -133,8 +134,8 @@ public:
 	std::vector<std::array<std::vector<unsigned>, 8>> _schonhage_convolution_tmp;
 
 	std::vector<unsigned> _multiplication_result_tmp;
-	size_t _additions = 0;
-	size_t _multiplications = 0;
+	mutable size_t _additions = 0;
+	mutable size_t _multiplications = 0;
 
 
 };

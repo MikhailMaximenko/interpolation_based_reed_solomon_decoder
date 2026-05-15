@@ -15,7 +15,7 @@ struct InterpolationBasedFastRSDecoder {
 
 
 
-	InterpolationBasedFastRSDecoder(galois_field const&, unsigned, unsigned);
+	InterpolationBasedFastRSDecoder(galois_field &&, unsigned, unsigned);
 
 	std::vector<unsigned> encode(std::vector<unsigned> &);
 
