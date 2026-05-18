@@ -39,6 +39,9 @@ struct galois_field
 	std::vector<unsigned>& DFT(std::vector<unsigned>&, std::vector<unsigned>&); // cyclotomic
 	std::vector<unsigned>& IDFT(std::vector<unsigned>&, std::vector<unsigned>&); // cyclotomic
 
+	std::vector<unsigned>& exDFT(std::vector<unsigned>&, std::vector<unsigned>&); // cyclotomic
+	std::vector<unsigned>& exIDFT(std::vector<unsigned>&, std::vector<unsigned>&); // cyclotomic
+
 	std::vector<unsigned>& DFT(std::vector<unsigned>&, std::vector<unsigned>&, unsigned, unsigned); // binary architecture a with variable size
 	std::vector<unsigned>& IDFT(std::vector<unsigned>&, std::vector<unsigned>&, unsigned, unsigned); // binary architecture a with variable size
 

@@ -30,7 +30,7 @@ galois_field::galois_field(unsigned m, unsigned gen_poly, unsigned poly_size)
 	, _schonhage_strassen_tmp(5)
 	, _multiplication_result_tmp(6 * _n)
 	, _gcd_tmp_poly(_q)
-	, _caratsuba_tmp(12)
+	, _caratsuba_tmp(16)
 {
 	init();
 }
@@ -171,7 +171,7 @@ void galois_field::init() {
 		size /= 3;
 		++size;
 	}
-	size = 1 << (sizeof(unsigned) * 8 - std::countl_zero(_n) + 1);
+	size = 1 << (sizeof(unsigned) * 8 - std::countl_zero(_n) + 4);
 	for (size_t i = 0; i < _caratsuba_tmp.size(); ++i) {
 		for (auto& v : _caratsuba_tmp[i]) {
 			v.resize(size);
@@ -296,9 +296,9 @@ std::vector<unsigned>& galois_field::fast_poly_multiplication(std::vector<unsign
 	//_dft_tmp[0]
 	size_t start_add = _additions;
 	size_t start_mult = _multiplications;
+	std::cout << "multiplicating with deg: " << dg <<  "\n";
 	fast_poly_multiplication(a, b, dst, dg);
 
-	std::cout << "multiplicating with deg: " << dg << "\n";
 	std::cout << " additions: " << _additions - start_add << " multiplications: " << _multiplications - start_mult << "\n";
 	std::fill(dst.begin() + std::min(answer_dg + 1, dst.size()), dst.end(), 0);
 	/*for (size_t i = 0; i <= answer_dg; ++i) {
@@ -315,13 +315,31 @@ std::vector<unsigned>& galois_field::fast_poly_multiplication(std::vector<unsign
 }
 
 std::vector<unsigned>& galois_field::fast_poly_multiplication(std::vector<unsigned>& a, std::vector<unsigned>& b, std::vector<unsigned>& dst, unsigned length) {
+	std::cout << "multiplication length: " << length << "\n";
 	++_poly_multiplications;
 	//std::fill(_multiplication_result_tmp.begin(), _multiplication_result_tmp.end(), 0);
-	if (length <= 512) {
-		size_t len = 1 << (sizeof(unsigned) * 8 - std::countl_zero(length - 1));
-		caratsuba_multiplication(a, b, _multiplication_result_tmp, len, 0);
+	size_t len = 1 << (sizeof(unsigned) * 8 - std::countl_zero(length - 1));
+	caratsuba_multiplication(a, b, _multiplication_result_tmp, len, 0);
+	/*if ((length <= 512 && (length > _n / 2 || length < _n / 4)) || length >= 64) {
 	}
-	else {
+	else if (length <= _q / 2 && length >= _q / 4) {
+		for (size_t i = 0; i < 3; ++i) {
+			std::fill(_caratsuba_tmp[0][i].begin(), _caratsuba_tmp[0][i].begin() + _n, 0);
+		}
+		std::fill(_multiplication_result_tmp.begin(), _multiplication_result_tmp.end(), 0);
+		exDFT(a, _caratsuba_tmp[0][0]);
+		exDFT(b, _caratsuba_tmp[0][1]);
+		for (size_t i = 0; i < _q; ++i) {
+			_caratsuba_tmp[0][2][i] = multiply(_caratsuba_tmp[0][0][i], _caratsuba_tmp[0][1][i]);
+		}
+
+		exIDFT(_caratsuba_tmp[0][2], _multiplication_result_tmp);
+		for (size_t i = 0; i < 3; ++i) {
+			std::fill(_caratsuba_tmp[0][i].begin(), _caratsuba_tmp[0][i].begin() + _n, 0);
+		}
+		
+	
+	} else {
 		unsigned len = length - 1;
 		unsigned n = 1;
 		while (len >= 1) {
@@ -331,7 +349,7 @@ std::vector<unsigned>& galois_field::fast_poly_multiplication(std::vector<unsign
 
 
 		SCHONHAGE_STRASSEN_FFT(a, b, _multiplication_result_tmp, n, 0);
-	}
+	}*/
 	std::copy(_multiplication_result_tmp.begin(), _multiplication_result_tmp.begin() + std::min((size_t)2ull * length, dst.size()), dst.begin());
 	return dst;
 }
@@ -607,6 +625,33 @@ std::vector<unsigned>& galois_field::IDFT(std::vector<unsigned>& src, std::vecto
 	return dst;
 }
 
+std::vector<unsigned>& galois_field::exDFT(std::vector<unsigned>& src, std::vector<unsigned>& dst) {
+	std::fill(_dft_tmp[0][0].begin(), _dft_tmp[0][0].end(), 0);
+	std::fill(dst.begin(), dst.end(), 0);
+	std::copy(src.begin() + 1, src.begin() + _q, _dft_tmp[0][0].begin());
+	DFT(_dft_tmp[0][0], dst);
+	std::memmove(dst.data() + 1, dst.data(), _n * sizeof(unsigned));
+	dst[0] = src[0];
+	for (size_t i = 1; i <= _n; ++i) {
+		dst[i] = add(multiplyConst(dst[i], i - 1), dst[0]);
+	}
+	return dst;
+}
+
+std::vector<unsigned>& galois_field::exIDFT(std::vector<unsigned>& src, std::vector<unsigned>& dst) {
+	std::fill(_dft_tmp[0][0].begin(), _dft_tmp[0][0].end(), 0);
+	std::fill(dst.begin(), dst.end(), 0);
+	std::copy(src.begin() + 1, src.begin() + _q, _dft_tmp[0][0].begin());
+	for (size_t i = 0; i < _n; ++i) {
+		_dft_tmp[0][0][i] = multiply(add(_dft_tmp[0][0][i], src[0]), _exp_table[_n - i]);
+	}
+	IDFT(_dft_tmp[0][0], dst);
+	std::memmove(dst.data() + 1, dst.data(), _n * sizeof(unsigned));
+	dst[0] = src[0];
+	return dst;
+}
+
+
 std::vector<unsigned>& galois_field::DFT(std::vector<unsigned>& src, std::vector<unsigned>& dst, unsigned size, unsigned bias) {
 	DFTimpl(src, dst, size, 0, 0);
 	return dst;
@@ -729,8 +774,10 @@ std::vector<unsigned>& galois_field::SCHONHAGE_CONVOLUTION(std::vector<unsigned>
 		std::copy(tmp[0].begin() + i * block_size, tmp[0].begin() + (i + 1) * block_size, tmp[2].begin());
 		std::copy(tmp[1].begin() + i * block_size, tmp[1].begin() + (i + 1) * block_size, tmp[3].begin());
 		std::fill(tmp[4].begin(), tmp[4].begin() + block_size, 0);
-		SCHONHAGE_STRASSEN_FFT(tmp[2], tmp[3], tmp[4], m, level + 1);
+		fast_poly_multiplication(tmp[2], tmp[3], tmp[4], 2 * m);
+		//SCHONHAGE_STRASSEN_FFT(tmp[2], tmp[3], tmp[4], m, level + 1);
 		std::copy(tmp[4].begin(), tmp[4].begin() + block_size, tmp[5].begin() + i * block_size);
+		add_subpoly_with_modular_shift(tmp[5], tmp[4], 0, block_size, 2 * block_size, m, block_size);
 		//print_poly(tmp[4]);
 	}
 	//print_poly(tmp[5]);
@@ -749,6 +796,24 @@ std::vector<unsigned>& galois_field::caratsuba_multiplication(std::vector<unsign
 				dst[i + j] = add(dst[i + j], multiply(a[i], b[j]));
 			}
 		}
+		return dst;
+	}
+	else if (length <= (_q >> 1) && length >= _q / 8) {
+		for (size_t i = 0; i < 4; ++i) {
+			std::fill(tmp[i].begin(), tmp[i].begin() + _n, 0);
+		}
+		std::fill(_multiplication_result_tmp.begin(), _multiplication_result_tmp.end(), 0);
+		exDFT(a, tmp[0]);
+		exDFT(b, tmp[1]);
+		for (size_t i = 0; i < _q; ++i) {
+			tmp[2][i] = multiply(tmp[0][i], tmp[1][i]);
+		}
+
+		exIDFT(tmp[2], tmp[3]);
+		/*for (size_t i = 0; i < 3; ++i) {
+			std::fill(_caratsuba_tmp[0][i].begin(), _caratsuba_tmp[0][i].begin() + _n, 0);
+		}*/
+		std::copy(tmp[3].begin(), tmp[3].begin() + std::min((size_t)length << 1, dst.size()), dst.begin());
 		return dst;
 	}
 	for (auto& v : tmp) {
@@ -771,10 +836,12 @@ std::vector<unsigned>& galois_field::caratsuba_multiplication(std::vector<unsign
 	add_poly_to(tmp[2], tmp[1], k, length);
 	add_poly_to(tmp[2], tmp[4], 0, length);
 	std::copy(tmp[2].begin(), tmp[2].begin() + std::min((size_t)length << 1, dst.size()), dst.begin());
+	//std::cout << "initial length: " 
 	return dst;
 }
 
 std::vector<unsigned>& galois_field::SCHONHAGE_STRASSEN_FFT(std::vector<unsigned>& a, std::vector<unsigned>& b, std::vector<unsigned>& dst, unsigned n, unsigned level) {
+	assert(false);
 	//std::cout << "NNN: " << n << "\n";
 	++_poly_multiplications;
 	unsigned c = 1, k = 0;

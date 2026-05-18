@@ -349,7 +349,7 @@ void A23Mul(const GFSymbol* A, GFSymbol* P)
 	P[12] = T[12] ^ T[35];
 
 
-}
+} // 105xor
 
 void FFT_23(const GFSymbol *f, GFSymbol *F, const galois_field &GF)
 {
@@ -1791,7 +1791,7 @@ P[46]=P[46]^T[467];
 P[46]=P[46]^T[485];
 P[20]=P[67]^T[481];
 
-}//156XOR
+}//1472XOR
 
 void FFT_89(const GFSymbol *f, GFSymbol *F, const galois_field &GF)
 {
