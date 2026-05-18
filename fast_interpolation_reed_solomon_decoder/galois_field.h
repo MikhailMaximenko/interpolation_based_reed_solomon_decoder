@@ -56,6 +56,7 @@ struct galois_field
 	unsigned degree(std::vector<unsigned> const&, unsigned, unsigned);
 	std::vector<unsigned>& rev_poly(std::vector<unsigned>&, std::vector<unsigned>&, unsigned);
 	std::vector<unsigned>& add_poly(std::vector<unsigned>&, std::vector<unsigned>&, std::vector<unsigned>&, unsigned);
+	std::vector<unsigned>& add_poly_to(std::vector<unsigned>&, std::vector<unsigned>&, unsigned, unsigned);
 	std::vector<unsigned>& sub_poly(std::vector<unsigned>&, std::vector<unsigned>&, std::vector<unsigned>&);
 
 
@@ -64,6 +65,8 @@ struct galois_field
 	std::vector<unsigned>& SCHONHAGE_DFT(std::vector<unsigned>&, std::vector<unsigned>&, unsigned, unsigned, unsigned, unsigned, unsigned);
 	std::vector<unsigned>& SCHONHAGE_CONVOLUTION(std::vector<unsigned>& , std::vector<unsigned>& , std::vector<unsigned>& , unsigned , unsigned , unsigned , unsigned );
 	std::vector<unsigned>& SCHONHAGE_STRASSEN_FFT(std::vector<unsigned>&, std::vector<unsigned>&, std::vector<unsigned>&, unsigned, unsigned);
+
+	std::vector<unsigned>& caratsuba_multiplication(std::vector<unsigned>&, std::vector<unsigned>&, std::vector<unsigned>&, unsigned, unsigned);
 
 	void reset_counters();
 
@@ -133,9 +136,13 @@ public:
 	std::vector<std::array<std::vector<unsigned>, 8>> _schonhage_strassen_tmp;
 	std::vector<std::array<std::vector<unsigned>, 8>> _schonhage_convolution_tmp;
 
+	std::vector<std::array<std::vector<unsigned>, 8>> _caratsuba_tmp;
+
 	std::vector<unsigned> _multiplication_result_tmp;
 	mutable size_t _additions = 0;
 	mutable size_t _multiplications = 0;
+	mutable size_t _poly_multiplications = 0;
+	mutable size_t _poly_divisions = 0;
 
 
 };

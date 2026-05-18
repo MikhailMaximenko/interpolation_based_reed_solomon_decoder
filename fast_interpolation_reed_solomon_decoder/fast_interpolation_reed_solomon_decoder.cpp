@@ -98,6 +98,8 @@ void InterpolationBasedFastRSDecoder::decode(std::vector<unsigned>& cw) {
 		//_gf.print_poly(_tmp[5]);
 		std::reverse(_tmp[5].begin(), _tmp[5].begin() + t); // h0 .. h_(t-1)
 		_tmp[4][0] = 1;
+		std::cout << "operations before inversion:\n";
+		std::cout << _gf._additions << " " << _gf._multiplications << "\n";
 		_gf.inv_poly(_tmp[4], _tmp[6], _k + t);
 		_gf.remainder_of_power(_gf.fast_poly_multiplication(_tmp[5], _tmp[4], _tmp[8]), t);
 		_gf.remainder_of_power(_gf.fast_poly_multiplication(_tmp[6], _tmp[8], _tmp[7]), _k + t);
@@ -234,18 +236,18 @@ int main(int argc, char* argv[])
 	}
 
 	out << "n, k, err num, additions, multiplications\n";
-	//galois_field gf2(7, 0x83, 7);
+	////galois_field gf2(7, 0x83, 7);
 
-	//test_decoder(gf2, 127, 11, 15);
+	////test_decoder(gf2, 127, 11, 15);
 
-	//galois_field gf(3, 0xb, 3);
+	////galois_field gf(3, 0xb, 3);
 	std::vector<unsigned> field_sizes = { 3, 6, 7, 9, 10, 11 };
 	std::vector<unsigned> field_generators = { 0xb, 0x43, 0x83, 0x211, 0x409, 0x805 };
 	//// 2 2
 	for (size_t i = 0; i < field_sizes.size(); ++i) {
 		galois_field gf(field_sizes[i], field_generators[i], field_sizes[i]);
 		unsigned n = (1 << field_sizes[i]) - 1;
-		unsigned k = n * k_rate;
+		unsigned k = n* k_rate;
 		unsigned t = ((n - k) / 2) * err_rate;
 		if (type == 0) {
 			InterpolationBasedFastRSDecoder decoder(std::move(gf), n, k);
@@ -265,31 +267,26 @@ int main(int argc, char* argv[])
 	//InterpolationBasedFastRSDecoder decoder(gf, 511, 256);
 	//test_decoder(gf, 7, 1, 10);
 	//test_decoder(decoder, 511, 256, 10);
+	//galois_field gf(3, 0xb, 3);
 
-	/*std::vector<unsigned> a(1024), b(1024), c(80), d(80), e(80), f(80);
-	for (size_t i = 1024; i < 2048; ++i) {
-		galois_field gf(10, 0x409, 10);
-		a[1] = 1;
-		gf.DFT(a, b);
-		std::cout << i << '\n';
-		if (b[1] == 2) {
-			gf.print_poly(b);
-			gf.print_poly(gf._exp_table);
-			break;
-		}
-
-	}*/
+	//std::vector<unsigned> a(10), b(10), c(10), d(10), e(80), f(80);
 	//a = { 38, 45, 31, 40, 3, 55, 51, 6, 50, 30, 31, 62, 5, 44, 38, 42, 18, 33, 47, 30, 39, 11, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
 	//a[0] = 2;
-	//a[1] = 2;
+	//a[1] = 3;
 	//a[2] = 1;
 	//a[3] = 7;
 	//a[4] = 2;
 	//b[0] = 3;
 	//b[1] = 1;
-	//c[0] = 1;
-	//c[1] = 3;
+	//b[2] = 1;
+	//b[3] = 3;
 	//c[2] = 1;
+	//gf.print_poly(a);
+	//gf.print_poly(b);
+	//gf.fast_poly_multiplication(a, b, c, 3);
+	//gf.print_poly(c);
+	//gf.caratsuba_multiplication(a, b, d, 4, 0);
+	//gf.print_poly(d);
 	// expected result 1 7
 	//gf.inv_poly(c, d, 4);
 	//gf.remainder_of_power(gf.fast_poly_multiplication(a, c, f), 2);

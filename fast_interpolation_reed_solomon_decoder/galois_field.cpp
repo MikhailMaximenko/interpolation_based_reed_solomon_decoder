@@ -30,6 +30,7 @@ galois_field::galois_field(unsigned m, unsigned gen_poly, unsigned poly_size)
 	, _schonhage_strassen_tmp(5)
 	, _multiplication_result_tmp(6 * _n)
 	, _gcd_tmp_poly(_q)
+	, _caratsuba_tmp(12)
 {
 	init();
 }
@@ -141,7 +142,8 @@ void galois_field::init() {
 	}
 
 	std::cout << "initting mult tmps\n";
-	size_t size = 6 * _q;
+	size_t size = 9 * _q;
+
 	for (size_t i = 0; i < _schonhage_dft_tmp.size(); ++i) {
 		_schonhage_dft_tmp[i].resize(size);
 		for (auto& v : _schonhage_dft_tmp[i]) {
@@ -168,6 +170,13 @@ void galois_field::init() {
 		}
 		size /= 3;
 		++size;
+	}
+	size = 1 << (sizeof(unsigned) * 8 - std::countl_zero(_n) + 1);
+	for (size_t i = 0; i < _caratsuba_tmp.size(); ++i) {
+		for (auto& v : _caratsuba_tmp[i]) {
+			v.resize(size);
+		}
+		size >>= 1;
 	}
 
 	std::cout << "initted\n";
@@ -285,8 +294,12 @@ std::vector<unsigned>& galois_field::fast_poly_multiplication(std::vector<unsign
 		}
 	}*/
 	//_dft_tmp[0]
-
+	size_t start_add = _additions;
+	size_t start_mult = _multiplications;
 	fast_poly_multiplication(a, b, dst, dg);
+
+	std::cout << "multiplicating with deg: " << dg << "\n";
+	std::cout << " additions: " << _additions - start_add << " multiplications: " << _multiplications - start_mult << "\n";
 	std::fill(dst.begin() + std::min(answer_dg + 1, dst.size()), dst.end(), 0);
 	/*for (size_t i = 0; i <= answer_dg; ++i) {
 		if (dst[i] != _dft_tmp[0][0][i] || (degree(dst) != answer_dg && degree(dst) != 0)) {
@@ -302,22 +315,29 @@ std::vector<unsigned>& galois_field::fast_poly_multiplication(std::vector<unsign
 }
 
 std::vector<unsigned>& galois_field::fast_poly_multiplication(std::vector<unsigned>& a, std::vector<unsigned>& b, std::vector<unsigned>& dst, unsigned length) {
+	++_poly_multiplications;
 	//std::fill(_multiplication_result_tmp.begin(), _multiplication_result_tmp.end(), 0);
-	unsigned len = length - 1;
-	unsigned n = 1;
-	while (len >= 1) {
-		n *= 3;
-		len /= 3;
+	if (length <= 512) {
+		size_t len = 1 << (sizeof(unsigned) * 8 - std::countl_zero(length - 1));
+		caratsuba_multiplication(a, b, _multiplication_result_tmp, len, 0);
 	}
+	else {
+		unsigned len = length - 1;
+		unsigned n = 1;
+		while (len >= 1) {
+			n *= 3;
+			len /= 3;
+		}
 
 
-	SCHONHAGE_STRASSEN_FFT(a, b, _multiplication_result_tmp, n, 0);
-	
+		SCHONHAGE_STRASSEN_FFT(a, b, _multiplication_result_tmp, n, 0);
+	}
 	std::copy(_multiplication_result_tmp.begin(), _multiplication_result_tmp.begin() + std::min((size_t)2ull * length, dst.size()), dst.begin());
 	return dst;
 }
 
 std::vector<unsigned>& galois_field::fast_poly_division(std::vector<unsigned>& a, std::vector<unsigned>& b, std::vector<unsigned>& quotient, std::vector<unsigned>& remainder) {
+	++_poly_divisions;
 	auto deg_a = degree(a), deg_b = degree(b);
 	std::fill(remainder.begin(), remainder.end(), 0);
 	std::fill(quotient.begin(), quotient.end(), 0);
@@ -340,8 +360,12 @@ std::vector<unsigned>& galois_field::fast_poly_division(std::vector<unsigned>& a
 }
 
 void galois_field::reset_counters() {
+	std::cout << "resetting with: \n\tadditions: " << _additions << "\n\tmultiplications: "
+		<< _multiplications << "\n\tpoly multiplications: " << _poly_multiplications << "\n\tpoly divisions: " << _poly_divisions << "\n";
 	_additions = 0;
 	_multiplications = 0;
+	_poly_divisions = 0;
+	_poly_multiplications = 0;
 }
 
 std::array<std::pair<std::vector<unsigned>, std::vector<unsigned>>, 3>& 
@@ -606,27 +630,19 @@ std::vector<unsigned>& galois_field::add_subpoly_with_modular_shift(std::vector<
 		return a;
 	}
 	shift = shift % (3 * mod);
-	auto deg = degree(b, start, end);
-	auto result_degree = deg + shift;
-	if (result_degree < 2 * mod) {
-		return add_subpoly(a, b, m + shift, start, end);
+	for (size_t i = start; i < end; ++i) {
+		if (shift < 2 * mod) {
+			a[m + shift] = add(a[m + shift], b[i]);
+		}
+		else {
+			a[m + shift - 2 * mod] = add(a[m + shift - 2 * mod], b[i]);
+			a[m + shift - mod] = add(a[m + shift - mod], b[i]);
+		}
+		++shift;
+		if (shift == 3 * mod) {
+			shift = 0;
+		}
 	}
-
-	// need to be careful with bounds
-	if (shift < 2 * mod) {
-		add_subpoly(a, b, m + shift, start, std::min(start + 2 * mod - shift, end));
-	}
-	if (result_degree >= 3 * mod) {
-		add_subpoly(a, b, m, start + 3 * mod - shift, end); // x^3mod = 1
-	}
-
-	unsigned pos_begin = shift <= 2 * mod ? m : m + shift - 2 * mod;
-	unsigned pos_start = shift <= 2 * mod ? start + 2 * mod - shift : start;
-	unsigned pos_end = shift <= 2 * mod ? std::min(pos_start + mod, end) : std::min(pos_start + 3 * mod - shift, end);
-
-	add_subpoly(a, b, pos_begin, pos_start, pos_end);
-	add_subpoly(a, b, pos_begin + mod, pos_start, pos_end); // x^2mod = x^mod + 1
-
 	return a;
 }
 
@@ -642,22 +658,23 @@ std::vector<unsigned>& galois_field::SCHONHAGE_DFT(std::vector<unsigned>& src, s
 	for (auto& v : _schonhage_dft_results_tmp[lvl]) {
 		std::fill(v.begin(), v.end(), 0);
 	}
+	size_t ln = length / 3;
 	// init b and c
-	for (size_t i = 0; i < length / 3; ++i) {
+	for (size_t i = 0; i < ln; ++i) {
 		std::copy(src.begin() + (3 * i) * block_size, src.begin() + (3 * i + 1) * block_size, _schonhage_dft_tmp[lvl][0].begin() + i * block_size);
 	}
-	SCHONHAGE_DFT(_schonhage_dft_tmp[lvl][0], _schonhage_dft_results_tmp[lvl][0], length / 3, root * 3, m, block_size, lvl + 1);
-	for (size_t i = 0; i < length / 3; ++i) {
+	SCHONHAGE_DFT(_schonhage_dft_tmp[lvl][0], _schonhage_dft_results_tmp[lvl][0], ln, root * 3, m, block_size, lvl + 1);
+	for (size_t i = 0; i < ln; ++i) {
 		std::copy(src.begin() + (3 * i + 1) * block_size, src.begin() + (3 * i + 2) * block_size, _schonhage_dft_tmp[lvl][1].begin() + i * block_size);
 	}
-	SCHONHAGE_DFT(_schonhage_dft_tmp[lvl][1], _schonhage_dft_results_tmp[lvl][1], length / 3, root * 3, m, block_size, lvl + 1);
-	for (size_t i = 0; i < length / 3; ++i) {
+	SCHONHAGE_DFT(_schonhage_dft_tmp[lvl][1], _schonhage_dft_results_tmp[lvl][1], ln, root * 3, m, block_size, lvl + 1);
+	for (size_t i = 0; i < ln; ++i) {
 		std::copy(src.begin() + (3 * i + 2) * block_size, src.begin() + (3 * i + 3) * block_size, _schonhage_dft_tmp[lvl][2].begin() + i * block_size);
 	}
-	SCHONHAGE_DFT(_schonhage_dft_tmp[lvl][2], _schonhage_dft_results_tmp[lvl][2], length / 3, root * 3, m, block_size, lvl + 1);
+	SCHONHAGE_DFT(_schonhage_dft_tmp[lvl][2], _schonhage_dft_results_tmp[lvl][2], ln, root * 3, m, block_size, lvl + 1);
 	
 	unsigned cur = 0;
-	for (size_t i = 0; i < length / 3; ++i) {
+	for (size_t i = 0; i < ln; ++i) {
 		// a[i] =  b[i] + cur*c[i] + cur*cur*d[i]
 		// a[i + n/3] =  b[i] + root^(n/3)cur*c[i] + root^(2n/3)cur*cur*d[i]
 		// a[i + 2n/3] =  b[i] + root^(2n/3)cur*c[i] + root^(n/3)cur*cur*d[i]
@@ -672,19 +689,19 @@ std::vector<unsigned>& galois_field::SCHONHAGE_DFT(std::vector<unsigned>& src, s
 		add_subpoly_with_modular_shift(dst, _schonhage_dft_results_tmp[lvl][1], i * block_size, i * block_size, (i + 1) * block_size, m, cc);
 		add_subpoly_with_modular_shift(dst, _schonhage_dft_results_tmp[lvl][2], i * block_size, i * block_size, (i + 1) * block_size, m, ccc);
 
-		cc += (length / 3) * root;
-		ccc += (2 * length / 3) * root;
+		cc += ln * root;
+		ccc += (2 * ln) * root;
 
-		add_subpoly(dst, _schonhage_dft_results_tmp[lvl][0], (i + (length / 3)) * block_size, i * block_size, (i + 1) * block_size);
-		add_subpoly_with_modular_shift(dst, _schonhage_dft_results_tmp[lvl][1], (i + (length / 3)) * block_size, i * block_size, (i + 1) * block_size, m, cc);
-		add_subpoly_with_modular_shift(dst, _schonhage_dft_results_tmp[lvl][2], (i + (length / 3)) * block_size, i * block_size, (i + 1) * block_size, m, ccc);
+		add_subpoly(dst, _schonhage_dft_results_tmp[lvl][0], (i + ln) * block_size, i * block_size, (i + 1) * block_size);
+		add_subpoly_with_modular_shift(dst, _schonhage_dft_results_tmp[lvl][1], (i + ln) * block_size, i * block_size, (i + 1) * block_size, m, cc);
+		add_subpoly_with_modular_shift(dst, _schonhage_dft_results_tmp[lvl][2], (i + ln) * block_size, i * block_size, (i + 1) * block_size, m, ccc);
 
-		cc += (length / 3) * root;
-		ccc -= (length / 3) * root;
+		cc += ln * root;
+		ccc -= ln * root;
 
-		add_subpoly(dst, _schonhage_dft_results_tmp[lvl][0], (i + (2 * length / 3)) * block_size, i * block_size, (i + 1) * block_size);
-		add_subpoly_with_modular_shift(dst, _schonhage_dft_results_tmp[lvl][1], (i + (2 * length / 3)) * block_size, i * block_size, (i + 1) * block_size, m, cc);
-		add_subpoly_with_modular_shift(dst, _schonhage_dft_results_tmp[lvl][2], (i + (2 * length / 3)) * block_size, i * block_size, (i + 1) * block_size, m, ccc);
+		add_subpoly(dst, _schonhage_dft_results_tmp[lvl][0], (i + (2 * ln)) * block_size, i * block_size, (i + 1) * block_size);
+		add_subpoly_with_modular_shift(dst, _schonhage_dft_results_tmp[lvl][1], (i + (2 * ln)) * block_size, i * block_size, (i + 1) * block_size, m, cc);
+		add_subpoly_with_modular_shift(dst, _schonhage_dft_results_tmp[lvl][2], (i + (2 * ln)) * block_size, i * block_size, (i + 1) * block_size, m, ccc);
 
 		cur += root;
 		cur = cur % (3 * m);
@@ -723,7 +740,43 @@ std::vector<unsigned>& galois_field::SCHONHAGE_CONVOLUTION(std::vector<unsigned>
 	return dst;
 }
 
+std::vector<unsigned>& galois_field::caratsuba_multiplication(std::vector<unsigned>& a, std::vector<unsigned>& b, std::vector<unsigned>& dst, unsigned length, unsigned lvl) {
+	auto& tmp = _caratsuba_tmp[lvl];
+	std::fill(dst.begin(), dst.end(), 0);
+	if (length <= 16) {
+		for (size_t i = 0; i < length; ++i) {
+			for (size_t j = 0; j < length; ++j) {
+				dst[i + j] = add(dst[i + j], multiply(a[i], b[j]));
+			}
+		}
+		return dst;
+	}
+	for (auto& v : tmp) {
+		std::fill(v.begin(), v.begin() + (length << 1), 0);
+	}
+	unsigned k = length >> 1;
+	std::copy_n(a.begin(), k, tmp[0].begin());
+	std::copy_n(a.begin() + k, k, tmp[1].begin());
+	std::copy_n(b.begin(), k, tmp[2].begin());
+	std::copy_n(b.begin() + k, k, tmp[3].begin());
+	caratsuba_multiplication(tmp[0], tmp[2], tmp[4], k, lvl + 1); // F0*G0
+	caratsuba_multiplication(tmp[1], tmp[3], tmp[5], k, lvl + 1); // F1*G1
+	add_poly_to(tmp[0], tmp[1], 0, k);
+	add_poly_to(tmp[2], tmp[3], 0, k);
+	caratsuba_multiplication(tmp[0], tmp[2], tmp[1], k, lvl + 1); // (F0 + F1)*(G0 + G1)
+	std::fill(tmp[2].begin(), tmp[2].begin() + (length << 1), 0);
+	add_poly_to(tmp[2], tmp[5], length, length);
+	add_poly_to(tmp[2], tmp[5], k, length);
+	add_poly_to(tmp[2], tmp[4], k, length);
+	add_poly_to(tmp[2], tmp[1], k, length);
+	add_poly_to(tmp[2], tmp[4], 0, length);
+	std::copy(tmp[2].begin(), tmp[2].begin() + std::min((size_t)length << 1, dst.size()), dst.begin());
+	return dst;
+}
+
 std::vector<unsigned>& galois_field::SCHONHAGE_STRASSEN_FFT(std::vector<unsigned>& a, std::vector<unsigned>& b, std::vector<unsigned>& dst, unsigned n, unsigned level) {
+	//std::cout << "NNN: " << n << "\n";
+	++_poly_multiplications;
 	unsigned c = 1, k = 0;
 	//std::cout << level << " " << n << "\n";
 	while (c < n) {
@@ -731,6 +784,8 @@ std::vector<unsigned>& galois_field::SCHONHAGE_STRASSEN_FFT(std::vector<unsigned
 		c *= 3;
 		++k;
 	}
+	size_t start_mult = _multiplications;
+	size_t start_add = _additions;
 	unsigned m = std::pow(3, k / 2 + k % 2);
 	auto& tmp = _schonhage_strassen_tmp[level];
 	for (auto& v : tmp) {
@@ -754,6 +809,14 @@ std::vector<unsigned>& galois_field::SCHONHAGE_STRASSEN_FFT(std::vector<unsigned
 		add_subpoly_with_modular_shift(tmp[2], tmp[2], 0, 2 * n, 4 * n, n, 2 * n);
 		std::copy(tmp[2].begin(), tmp[2].begin() + std::min((size_t)2 * n, dst.size()), dst.begin());
 		//std::fill(dst.begin() + 2 * n, dst.begin() + 4 * n, 0);
+		return dst;
+	}
+	if (n <= 512) {
+		size_t len = 1 << (sizeof(unsigned) * 8 - std::countl_zero(n - 1) + 1);
+		//std::cout << n << " " << len << "\n";
+		caratsuba_multiplication(tmp[6], tmp[7], tmp[2], len, 0);
+		add_subpoly_with_modular_shift(tmp[2], tmp[2], 0, 2 * n, 4 * n, n, 2 * n);
+		std::copy(tmp[2].begin(), tmp[2].begin() + std::min((size_t)2 * n, dst.size()), dst.begin());
 		return dst;
 	}
 	//std::cout << "here!!!!\n";
@@ -854,7 +917,7 @@ std::vector<unsigned>& galois_field::SCHONHAGE_STRASSEN_FFT(std::vector<unsigned
 		} 
 	}*/
 	//print_poly(tmp[1]);
-
+	std::cout << "schonhage strassen:\n" << "size: " << n << " additions: " << _additions - start_add << " multiplications: " << _multiplications - start_mult << "\n";
 	std::copy(tmp[1].begin(), tmp[1].begin() + std::min((size_t)2ull * n, dst.size()), dst.begin());
 	//std::cout << "good bye\n";
 	return dst;
@@ -944,6 +1007,17 @@ std::vector<unsigned>& galois_field::add_poly(std::vector<unsigned>& a, std::vec
 	return dst;
 }
 
+std::vector<unsigned>& galois_field::add_poly_to(std::vector<unsigned>& a, std::vector<unsigned>& b, unsigned m, unsigned length) {
+	for (unsigned i = 0; i < std::min(b.size(), (size_t)length); ++i) {
+		if (i + m >= a.size()) {
+			throw std::runtime_error("polynomial overflow");
+		}
+		a[i + m] = add(a[i + m], b[i]);
+
+	}
+	return a;
+}
+
 std::vector<unsigned>& galois_field::sub_poly(std::vector<unsigned>& a, std::vector<unsigned>& b, std::vector<unsigned>& dst) {
 	unsigned i;
 	for (i = 0; i < a.size() && i < b.size(); ++i) {
@@ -988,6 +1062,9 @@ std::vector<unsigned>& galois_field::inv_poly(std::vector<unsigned>& src, std::v
 	unsigned g0 = inverse(src[0]);
 	unsigned r = sizeof(unsigned) * 8 - std::countl_zero(mod - 1);
 	dst[0] = g0;
+	size_t start_add = _additions;
+	size_t start_mult = _multiplications;
+	std::cout << "inverse:\n";
 	for (unsigned i = 1; i <= r; ++i) {
 		//std::cout << r << "\n";
 		//std::cout << "hereee\n";
@@ -1001,13 +1078,18 @@ std::vector<unsigned>& galois_field::inv_poly(std::vector<unsigned>& src, std::v
 		//print_poly(src);
 		//print_poly(_inverse_temporary1);
 		fast_poly_multiplication(_inverse_temporary2, _inverse_temporary1, dst, (unsigned)(1 << (i)));
-		fast_poly_multiplication(src, remainder_of_power(_inverse_temporary1, 1 << (i)), _inverse_temporary2);
+		//fast_poly_multiplication(src, remainder_of_power(_inverse_temporary1, 1 << (i)), _inverse_temporary2);
 		//std::cout << std::min((unsigned)(1 << i), mod) << " " << i << "\n";
 		//print_poly(dst);
 		//print_poly(_inverse_temporary1);
 		//print_poly(_inverse_temporary2);
 		remainder_of_power(dst, std::min((unsigned)(1 << i), mod));
 	}
+	//if (_additions - start_add > 100000) {
+		//print_poly(src);
+		//std::cout << mod << "\n";
+	//}
+	std::cout << "mod power of 2: " << r << " additions: " << _additions - start_add << " multiplications: " << _multiplications - start_mult << "\n";
 	//std::cout << "returned\n";
 	//std::cout << "r: " << r << "\n";
 	return dst;
