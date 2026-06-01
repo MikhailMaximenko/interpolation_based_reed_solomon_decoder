@@ -71,6 +71,8 @@ struct galois_field
 
 	std::vector<unsigned>& caratsuba_multiplication(std::vector<unsigned>&, std::vector<unsigned>&, std::vector<unsigned>&, unsigned, unsigned);
 
+	std::vector<unsigned>& taylor_expansion(std::vector<unsigned>&, std::vector<unsigned>&, unsigned, unsigned, unsigned);
+	std::vector<unsigned>& gao_mateer_fft(std::vector<unsigned>&, std::vector<unsigned>&, std::vector<unsigned>&, unsigned);
 	void reset_counters();
 
 public:
@@ -140,6 +142,12 @@ public:
 	std::vector<std::array<std::vector<unsigned>, 8>> _schonhage_convolution_tmp;
 
 	std::vector<std::array<std::vector<unsigned>, 8>> _caratsuba_tmp;
+	std::vector<std::array<std::vector<unsigned>, 3>> _taylor_expansion_tmp;
+
+	std::vector<std::vector<unsigned>> precomputed_basises_gamma;
+	std::vector<std::vector<unsigned>> precomputed_basises_delta;
+	std::vector<std::vector<unsigned>> precomputed_space_gamma;
+	std::vector<std::array<std::vector<unsigned>, 6>> _gao_mateer_fft_tmp;
 
 	std::vector<unsigned> _multiplication_result_tmp;
 	mutable size_t _additions = 0;

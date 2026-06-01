@@ -168,6 +168,17 @@ void galois_field::init() {
 		size >>= 1;
 	}
 
+	std::cout << "initting gao-mateer subspaces\n";
+	// init gao-mateer
+	unsigned max_m = _m + 1;
+	for (size_t)
+	for (size_t m = max_m - 1; m >= 1; --m) {
+		for (size_t i = 0; i < m - 1; ++i) {
+			precomputed_basises_gamma[m][i] 
+
+		}
+	}
+
 	std::cout << "initted\n";
 }
 
@@ -1113,4 +1124,84 @@ unsigned galois_field::substitute_poly(std::vector<unsigned>& poly, unsigned val
 	}
 	return result;
 
+}
+
+std::vector<unsigned>& galois_field::taylor_expansion(std::vector<unsigned>& src, std::vector<unsigned>& dst, unsigned n, unsigned t, unsigned lvl) {
+	if (n <= t) {
+		std::copy_n(src.begin(), n, dst.begin());
+		return dst;
+	}
+	unsigned k;
+
+	auto& tmp = _taylor_expansion_tmp[lvl];
+	unsigned p = t * (1 << k);
+	unsigned r = (t - 1) * (1 << k);
+	// compute h
+	if (n - p < r) {
+		add_subpoly(tmp[0], src, 0, p, n); // tmp[0] := h
+	}
+	else {
+		add_subpoly(tmp[0], src, 0, p, p + r); // tmp[0] := h
+		add_subpoly(tmp[0], src, 0, p + r, n); 
+	}
+
+	// compute g0
+	add_subpoly(tmp[1], src, 0, 0, p);
+	add_subpoly(tmp[1], tmp[0], p, 0, r);
+
+	// first part of answer
+	taylor_expansion(tmp[1], tmp[2], p, t, lvl + 1);
+
+	// compute g1
+	std::fill(tmp[1].begin(), tmp[1].end(), 0);
+	add_subpoly(tmp[1], tmp[0], 0, 0, r);
+	add_subpoly(tmp[1], src, r, p + r, n);
+
+	std::fill(tmp[0].begin(), tmp[0].end(), 0);
+	taylor_expansion(tmp[1], tmp[0], n - p, t, lvl + 1);
+
+	// do result
+}
+
+
+std::vector<unsigned>& galois_field::gao_mateer_fft(std::vector<unsigned>& src, std::vector<unsigned>& dst, std::vector<unsigned>& basis, unsigned m) {
+	if (m == 1) {
+		return dst;
+	}
+	unsigned n = 1 << m;
+	auto& tmp = _gao_mateer_fft_tmp[m];
+
+	// substitute beta_m
+	unsigned beta = 1;
+	for (size_t i = 0; i < n; ++i) {
+		tmp[0][i] = multiply(src[i], beta);
+		beta = multiply(beta, basis[m - 1]);
+	}
+
+
+	// taylor expansion + split
+	taylor_expansion(tmp[4], tmp[5], n, 2, 0);
+	for (size_t i = 0; i < n / 2; ++i) {
+		tmp[2][i] = tmp[5][2 * i];
+		tmp[3][i] = tmp[5][2 * i + 1];
+	}
+
+	// basis gamma
+	for (size_t i = 0; i < m - 1; ++i) {
+		tmp[0][i] = multiply(basis[i], basis[m - 1]); // G basis
+		tmp[1][i] = add(multiply(tmp[0][i], tmp[0][i]), tmp[0][i]); // D basis
+	}
+
+	// pre answers
+	gao_mateer_fft(tmp[2], tmp[4], tmp[1], m - 1);
+	gao_mateer_fft(tmp[3], tmp[5], tmp[1], m - 1);
+
+	// combine pre answers
+	// G[i] = alpha_0*gamma_0 + .. + alpha_m-1*gamma_m-1 = (alpha_0beta_0 + .. + alpha_m-1beta_m-1)beta_m^-1
+	unsigned k = 1 << (m - 1);
+	for (size_t i = 0; i < k; ++i) {
+		dst[i] = add(tmp[4][i], multiply(precomputed_space_gamma[m][i], tmp[5][i]));
+		dst[k + i] = add(tmp[4][i], tmp[5][i]);
+	}
+	return dst;
 }
