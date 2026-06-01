@@ -1,18 +1,6 @@
-﻿# CMakeList.txt : CMake project for fast_interpolation_reed_solomon_decoder, include source and define
-# project specific logic here.
-#
+﻿file(GLOB HEADERS "*.h")
+file(GLOB SOURCES "*.cpp")
 
-# Add source to this project's executable.
-add_executable (fast_interpolation_reed_solomon_decoder 
-	"fast_interpolation_reed_solomon_decoder.cpp" "fast_interpolation_reed_solomon_decoder.h" 
-	"galois_field.h" "galois_field.cpp" 
-	"fft.h" "FFT7.CPP" "FFT63.CPP" "FFT127.CPP" "FFT255.CPP" "FFT511.CPP" "linalg.h" "linalg.cpp"
-	"socow_vector.h" "berlecamp_massey_decoder.h" "berlecamp_massey_decoder.cpp" "FFT1023GT.cpp"
-	"FFT2047GT.cpp" "FFT4095GT.cpp"
-)
+add_library(fast_interpolation_reed_solomon_decoder ${HEADERS} ${SOURCES})
+target_include_directories(fast_interpolation_reed_solomon_decoder PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 
-if (CMAKE_VERSION VERSION_GREATER 3.12)
-  set_property(TARGET fast_interpolation_reed_solomon_decoder PROPERTY CXX_STANDARD 20)
-endif()
-
-# TODO: Add tests and install targets if needed.

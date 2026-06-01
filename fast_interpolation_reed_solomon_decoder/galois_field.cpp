@@ -31,6 +31,11 @@ galois_field::galois_field(unsigned m, unsigned gen_poly, unsigned poly_size)
 	, _multiplication_result_tmp(6 * _n)
 	, _gcd_tmp_poly(_q)
 	, _caratsuba_tmp(16)
+	, _taylor_expansion_tmp(_m + 1)
+	, precomputed_basises_delta(_m + 1)
+	, precomputed_basises_gamma(_m)
+	, precomputed_space_gamma(_m)
+	, _gao_mateer_fft_tmp(_m + 1)
 {
 	init();
 }
@@ -169,13 +174,37 @@ void galois_field::init() {
 	}
 
 	std::cout << "initting gao-mateer subspaces\n";
+	unsigned max_m = _m;
+	for (size_t i = max_m; i >= 1; --i) {
+		for (auto& v : _taylor_expansion_tmp[i]) {
+			v.resize(1 << i);
+		}
+	}
+	for (size_t i = max_m; i >= 1; --i) {
+		for (auto& v : _gao_mateer_fft_tmp[i]) {
+			v.resize(1 << i);
+		}
+	}
 	// init gao-mateer
-	unsigned max_m = _m + 1;
-	for (size_t)
+	// init the biggest space
+	precomputed_basises_delta[max_m].resize(max_m);
+	for (size_t i = 0; i < max_m; ++i) {
+		precomputed_basises_delta[max_m][i] = (1 << i);
+	}
 	for (size_t m = max_m - 1; m >= 1; --m) {
-		for (size_t i = 0; i < m - 1; ++i) {
-			precomputed_basises_gamma[m][i] 
+		precomputed_basises_delta[m].resize(m);
+		precomputed_basises_gamma[m].resize(m);
+		precomputed_space_gamma[m].resize(1 << m);
+		for (size_t i = 0; i < m; ++i) {
+			precomputed_basises_gamma[m][i] = multiply(precomputed_basises_delta[m + 1][i], inverse(precomputed_basises_delta[m + 1][m]));
+			precomputed_basises_delta[m][i] = add(multiply(precomputed_basises_gamma[m][i], precomputed_basises_gamma[m][i]), precomputed_basises_gamma[m][i]);
 
+			for (size_t j = 0; j < (1 << m); ++j) {
+				if ((j & (1 << i)) != 0) {
+					precomputed_space_gamma[m][j] = add(precomputed_space_gamma[m][j], precomputed_basises_gamma[m][i]);
+				}
+
+			}
 		}
 	}
 
@@ -1118,24 +1147,28 @@ linalg::bit_vector& galois_field::translate_to_bit_vector(std::vector<unsigned>&
 unsigned galois_field::substitute_poly(std::vector<unsigned>& poly, unsigned val) {
 	unsigned result = 0;
 	for (ptrdiff_t i = poly.size() - 1; i >= 0; --i) {
-		result = add(result, poly[i]);
 		result = multiply(result, val);
+		result = add(result, poly[i]);
 
 	}
 	return result;
 
 }
 
-std::vector<unsigned>& galois_field::taylor_expansion(std::vector<unsigned>& src, std::vector<unsigned>& dst, unsigned n, unsigned t, unsigned lvl) {
+// assume t always equals 2, n is always a power of 2
+std::vector<unsigned>& galois_field::taylor_expansion(std::vector<unsigned>& src, std::vector<unsigned>& dst, unsigned n, unsigned t) {
 	if (n <= t) {
 		std::copy_n(src.begin(), n, dst.begin());
 		return dst;
 	}
-	unsigned k;
-
-	auto& tmp = _taylor_expansion_tmp[lvl];
-	unsigned p = t * (1 << k);
-	unsigned r = (t - 1) * (1 << k);
+	std:fill(dst.begin(), dst.begin() + n, 0);
+	unsigned k = sizeof(unsigned) * 8 - std::countl_zero((n / t) - 1) - 1;
+	auto& tmp = _taylor_expansion_tmp[k + 2];
+	for (auto& v : tmp) {
+		std::fill(v.begin(), v.begin() + n, 0);
+	}
+	unsigned p = t << k;
+	unsigned r = (t - 1) << k;
 	// compute h
 	if (n - p < r) {
 		add_subpoly(tmp[0], src, 0, p, n); // tmp[0] := h
@@ -1144,64 +1177,118 @@ std::vector<unsigned>& galois_field::taylor_expansion(std::vector<unsigned>& src
 		add_subpoly(tmp[0], src, 0, p, p + r); // tmp[0] := h
 		add_subpoly(tmp[0], src, 0, p + r, n); 
 	}
-
 	// compute g0
 	add_subpoly(tmp[1], src, 0, 0, p);
-	add_subpoly(tmp[1], tmp[0], p, 0, r);
+	add_subpoly(tmp[1], tmp[0], 1 << k, 0, r);
 
 	// first part of answer
-	taylor_expansion(tmp[1], tmp[2], p, t, lvl + 1);
+	taylor_expansion(tmp[1], tmp[2], p, t);
 
 	// compute g1
 	std::fill(tmp[1].begin(), tmp[1].end(), 0);
 	add_subpoly(tmp[1], tmp[0], 0, 0, r);
-	add_subpoly(tmp[1], src, r, p + r, n);
-
+	add_subpoly(tmp[1], src, r, p + r, n); // <- error is probable here
 	std::fill(tmp[0].begin(), tmp[0].end(), 0);
-	taylor_expansion(tmp[1], tmp[0], n - p, t, lvl + 1);
-
+	taylor_expansion(tmp[1], tmp[0], n - p, t);
+	// (g0 + g1x) + (g2 + g3x)(x + x^2) + (g4 + g5x)(x + x^2)^2..
 	// do result
+	std::copy(tmp[2].begin(), tmp[2].begin() + p, dst.begin());
+	std::copy(tmp[0].begin(), tmp[0].begin() + n - p, dst.begin() + p);
+	return dst;
+}
+
+// assume t always equals 2, n is always a power of 2
+// it is reversed order taylor_expansion
+std::vector<unsigned>& galois_field::itaylor_expansion(std::vector<unsigned>& src, std::vector<unsigned>& dst, unsigned n, unsigned t) {
+	if (n <= t) {
+		std::copy_n(src.begin(), n, dst.begin());
+		return dst;
+	}
+	std:fill(dst.begin(), dst.begin() + n, 0);
+	unsigned k = sizeof(unsigned) * 8 - std::countl_zero((n / t) - 1) - 1;
+	auto& tmp = _taylor_expansion_tmp[k + 2];
+	for (auto& v : tmp) {
+		std::fill(v.begin(), v.begin() + n, 0);
+	}
+	unsigned p = t << k;
+	unsigned r = (t - 1) << k;
+	std::copy(src.begin(), src.begin() + p, tmp[0].begin());
+	itaylor_expansion(tmp[0], tmp[2], p, t); // g0
+	std::copy(src.begin() + p, src.begin() + n, tmp[1].begin());
+	itaylor_expansion(tmp[1], tmp[0], n - p, t); // g1
+	add_subpoly(tmp[2], tmp[0], 1 << k, 0, r);
+	add_subpoly(tmp[0], tmp[0], 0, r, n - p);
+	std::copy(tmp[2].begin(), tmp[2].begin() + p, dst.begin());
+	std::copy(tmp[0].begin(), tmp[0].begin() + n - p, dst.begin() + p);
+	return dst;
 }
 
 
-std::vector<unsigned>& galois_field::gao_mateer_fft(std::vector<unsigned>& src, std::vector<unsigned>& dst, std::vector<unsigned>& basis, unsigned m) {
+std::vector<unsigned>& galois_field::gao_mateer_fft(std::vector<unsigned>& src, std::vector<unsigned>& dst, unsigned m) {
 	if (m == 1) {
+		dst[0] = src[0];
+		dst[1] = add(src[0], multiply(src[1], precomputed_basises_delta[m][0]));
+
 		return dst;
 	}
 	unsigned n = 1 << m;
 	auto& tmp = _gao_mateer_fft_tmp[m];
-
-	// substitute beta_m
+	// substitute x=beta_m*x
 	unsigned beta = 1;
 	for (size_t i = 0; i < n; ++i) {
 		tmp[0][i] = multiply(src[i], beta);
-		beta = multiply(beta, basis[m - 1]);
+		beta = multiply(beta, precomputed_basises_delta[m][m - 1]);
 	}
-
-
 	// taylor expansion + split
-	taylor_expansion(tmp[4], tmp[5], n, 2, 0);
+	taylor_expansion(tmp[0], tmp[1], n, 2);
 	for (size_t i = 0; i < n / 2; ++i) {
-		tmp[2][i] = tmp[5][2 * i];
-		tmp[3][i] = tmp[5][2 * i + 1];
+		tmp[2][i] = tmp[1][2 * i];
+		tmp[3][i] = tmp[1][2 * i + 1];
 	}
-
-	// basis gamma
-	for (size_t i = 0; i < m - 1; ++i) {
-		tmp[0][i] = multiply(basis[i], basis[m - 1]); // G basis
-		tmp[1][i] = add(multiply(tmp[0][i], tmp[0][i]), tmp[0][i]); // D basis
-	}
-
 	// pre answers
-	gao_mateer_fft(tmp[2], tmp[4], tmp[1], m - 1);
-	gao_mateer_fft(tmp[3], tmp[5], tmp[1], m - 1);
-
+	gao_mateer_fft(tmp[2], tmp[0], m - 1);
+	gao_mateer_fft(tmp[3], tmp[1], m - 1);
 	// combine pre answers
 	// G[i] = alpha_0*gamma_0 + .. + alpha_m-1*gamma_m-1 = (alpha_0beta_0 + .. + alpha_m-1beta_m-1)beta_m^-1
 	unsigned k = 1 << (m - 1);
 	for (size_t i = 0; i < k; ++i) {
-		dst[i] = add(tmp[4][i], multiply(precomputed_space_gamma[m][i], tmp[5][i]));
-		dst[k + i] = add(tmp[4][i], tmp[5][i]);
+		dst[i] = add(tmp[0][i], multiply(precomputed_space_gamma[m - 1][i], tmp[1][i]));
+		dst[k + i] = add(dst[i], tmp[1][i]);
 	}
+	return dst;
+}
+
+std::vector<unsigned>& galois_field::gao_mateer_ifft(std::vector<unsigned>& src, std::vector<unsigned>& dst, unsigned m) {
+	if (m == 1) {
+		dst[0] = src[0];
+		dst[1] = multiply(add(src[0], src[1]), inverse(precomputed_basises_delta[m][0]));
+		return dst;
+	}
+	unsigned n = 1 << m;
+	unsigned k = 1 << (m - 1);
+	auto& tmp = _gao_mateer_fft_tmp[m];
+	for (size_t i = 0; i < k; ++i) {
+		tmp[1][i] = add(src[i], src[k + i]);
+		tmp[0][i] = (i == 0 ? src[i] : add(src[i], multiply(inverse(precomputed_space_gamma[m - 1][i]), tmp[1][i])));
+	}
+
+	gao_mateer_ifft(tmp[0], tmp[2], m - 1);
+	gao_mateer_ifft(tmp[1], tmp[3], m - 1);
+
+	for (size_t i = 0; i < n / 2; ++i) {
+		tmp[1][2 * i] = tmp[2][i];
+		tmp[1][2 * i + 1] = tmp[3][i];
+	}
+	
+	itaylor_expansion(tmp[1], tmp[0], n, 2);
+	print_poly(tmp[1]);
+	print_poly(tmp[0]);
+	unsigned beta = 1;
+	unsigned step = inverse(precomputed_basises_delta[m][m - 1]);
+	for (size_t i = 0; i < n; ++i) {
+		dst[i] = multiply(tmp[0][i], beta);
+		beta = multiply(beta, step);
+	}
+	
 	return dst;
 }

@@ -71,8 +71,11 @@ struct galois_field
 
 	std::vector<unsigned>& caratsuba_multiplication(std::vector<unsigned>&, std::vector<unsigned>&, std::vector<unsigned>&, unsigned, unsigned);
 
-	std::vector<unsigned>& taylor_expansion(std::vector<unsigned>&, std::vector<unsigned>&, unsigned, unsigned, unsigned);
-	std::vector<unsigned>& gao_mateer_fft(std::vector<unsigned>&, std::vector<unsigned>&, std::vector<unsigned>&, unsigned);
+	std::vector<unsigned>& taylor_expansion(std::vector<unsigned>&, std::vector<unsigned>&, unsigned, unsigned);
+	std::vector<unsigned>& gao_mateer_fft(std::vector<unsigned>&, std::vector<unsigned>&, unsigned);
+
+	std::vector<unsigned>& itaylor_expansion(std::vector<unsigned>&, std::vector<unsigned>&, unsigned, unsigned);
+	std::vector<unsigned>& gao_mateer_ifft(std::vector<unsigned>&, std::vector<unsigned>&, unsigned);
 	void reset_counters();
 
 public:
