@@ -2,8 +2,8 @@ unset title
 set xlabel 'field size'
 set ylabel 'operations'
 unset grid
-unset logscale y
-unset logscale x
+set logscale y
+set logscale x
 set xtics
 set ytics
 set terminal png size 1024,768 enhanced

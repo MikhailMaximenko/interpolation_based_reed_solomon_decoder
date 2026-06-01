@@ -97,17 +97,9 @@ namespace encoding {
         std::fill_n(_substitution_poly.begin(), _n, 0);
         std::fill_n(_forney.begin(), _n, 0);
 
-        //_gf.translate_bit_vector(_decoding, _translation);
-
-        //std::cout << _decoding.to_string() << "\n";
-
-        //_gf.print_poly(_translation);
-
         // count syndromes 
         _gf.DFT(cw, _reordering);
-        //std::cout << _gf._log_table[_root] << " " << start_beta << "\n";
         for (size_t i = 0; i < _delta - 1; ++i) {
-            //std::cout << _gf._log_table[cur_beta] << " ";
             size_t cur = 1;
 
             _syndromes[i] = _reordering[_gf._log_table[cur_beta]];
@@ -116,14 +108,7 @@ namespace encoding {
             }
             cur_beta = _gf.multiply(cur_beta, _root);
         }
-        //std::cout << "\n";
-        //_gf.print_poly(_reordering);
-        // std::cout << "syndromes: ";
-        //_gf.print_poly(_syndromes);
-        // for (auto i : _syndromes) {
-            // std::cout << i << " ";
-        // }
-        // std::cout << "\n";
+        
         if (flag) {
             return cw;
         }
@@ -140,31 +125,16 @@ namespace encoding {
             }
         }
 
-        //std::cout << "locators: ";
         _gf.DFT(_locators_poly, _locators_values);
-        //_gf.print_poly(_locators_poly);
-        //_gf.print_poly(_locators_values);
         size_t roots_cnt = 0;
         for (size_t i = 0; i < _gf._n; ++i) {
             if (_locators_values[i] == 0) {
                 size_t pos = _gf.inverse(_gf._exp_table[i]);
-                // std::cout << pos << " ";
                 _locators_roots[roots_cnt] = _gf._exp_table[i];
                 _locators_inversed_roots[roots_cnt] = pos;
                 ++roots_cnt;
             }
         }
-        //std::cout << "locators roots: ";
-        //_gf.print_poly(_locators_roots);
-        //for (size_t v : _locators_roots) {
-        //    std::cout << _gf._log_table[v] << " ";
-        //}
-
-        //std::cout << std::endl;
-        //_gf.print_poly(_locators_inversed_roots);
-        //for (size_t v : _locators_inversed_roots) {
-        //    std::cout << _gf._log_table[v] << " ";
-        //}
 
          std::cout << std::endl;
          size_t t = (_delta - 1) / 2;
@@ -175,16 +145,13 @@ namespace encoding {
         for (size_t i = 0; i < roots_cnt; ++i) {
             unsigned root_pos = _gf._log_table[_locators_roots[i]] % _gf._n;
             unsigned val = _gf.multiply(_locators_roots[i], _forney_values[root_pos]);
-            //std::cout << val << " " << _locators_roots[i] << " " << _forney_values[root_pos] << "\n";
             for (size_t j = 0; j < roots_cnt; ++j) {
                 if (i != j) {
                     val = _gf.multiply(val, _gf.inverse(_gf.add(1, _gf.multiply(_locators_roots[i], _locators_inversed_roots[j]))));
                 }
             }
-            //std::cout << val << "\n";
             cw[_gf._log_table[_locators_inversed_roots[i]] % _gf._n] = _gf.add(cw[_gf._log_table[_locators_inversed_roots[i]] % _gf._n], val);
         }
-        //_gf.print_poly(_translation);
         _gf.translate_to_bit_vector(_translation, _decoding);
 
         for (size_t i = 0; i < _delta - 1; ++i) {
@@ -201,20 +168,8 @@ namespace encoding {
 
     linalg::bit_vector bch_decoder::decode() {
         _gf.translate_bit_vector(_decoding, _translation);
-        // std::cout << _decoding.to_string() << "\n";
         pgz(_translation);
 
-        // std::cout << _decoding.to_string() << "\n";
-        // linalg::bit_vector decoded;
-        // for (auto const& vect : _gen) {
-        //     if (vect.leading() == _decoding.leading()) {
-        //         decoded.push_back(true);
-        //         _decoding += vect;
-        //     } else {
-        //         decoded.push_back(false);
-        //     }
-        // }
-        // std::cout << _decoding.to_string() << "\n";
         return linalg::bit_vector(_decoding);
     }
 
