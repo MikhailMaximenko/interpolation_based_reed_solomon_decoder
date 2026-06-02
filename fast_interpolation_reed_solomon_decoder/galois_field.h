@@ -157,6 +157,8 @@ public:
 	mutable size_t _multiplications = 0;
 	mutable size_t _poly_multiplications = 0;
 	mutable size_t _poly_divisions = 0;
+	mutable size_t _adds_during_inverse = 0;
+	mutable size_t _muls_during_inverse = 0;
 
 
 };

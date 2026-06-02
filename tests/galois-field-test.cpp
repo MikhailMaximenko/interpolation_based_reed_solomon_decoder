@@ -100,6 +100,36 @@ TEST(init_galois_field, gao_gamma_spaces) {
 	EXPECT_EQ(gamma_space1, gf.precomputed_space_gamma[1]);
 }
 
+TEST(gao_mateer_fft, one_quarter_poly) {
+	galois_field gf(3, 0xb, 3);
+	std::vector<unsigned> a = { 1, 1 };
+	std::vector<unsigned> b(2), c(2);
+	gf.gao_mateer_fft(a, b, 1);
+	std::vector<unsigned> check = {
+		gf.substitute_poly(a, 0),
+		gf.substitute_poly(a, 6),
+	};
+	EXPECT_EQ(b, check);
+
+	gf.gao_mateer_ifft(b, c, 1);
+	EXPECT_EQ(a, c);
+}
+
+TEST(gao_mateer_fft, random_quarter_poly) {
+	galois_field gf(3, 0xb, 3);
+	std::vector<unsigned> a = { 6, 2 };
+	std::vector<unsigned> b(2), c(2);
+	gf.gao_mateer_fft(a, b, 1);
+	std::vector<unsigned> check = {
+		gf.substitute_poly(a, 0),
+		gf.substitute_poly(a, 6),
+	};
+	EXPECT_EQ(b, check);
+
+	gf.gao_mateer_ifft(b, c, 1);
+	EXPECT_EQ(a, c);
+}
+
 TEST(gao_mateer_fft, one_half_poly) {
 	galois_field gf(3, 0xb, 3);
 	std::vector<unsigned> a = {1, 1, 1, 1};
@@ -175,4 +205,49 @@ TEST(gao_mateer_fft, random_full_poly) {
 	EXPECT_EQ(b, check);
 	gf.gao_mateer_ifft(b, c, 3);
 	EXPECT_EQ(a, c);
+}
+
+
+
+
+TEST(gao_mateer_fft, random_full_poly_large_field) {
+	galois_field gf(6, 0x43, 6);
+	std::vector<unsigned> a = { 15, 24, 13, 61, 46, 21, 61, 11, 32, 33, 23, 15, 41, 31, 32, 3  };
+	std::vector<unsigned> b(16), c(16);
+
+	gf.gao_mateer_fft(a, b, 4);
+	gf.gao_mateer_ifft(b, c, 4);
+	EXPECT_EQ(a, c);
+}
+
+TEST(gao_mateer_fft, multiply_short_poly) {
+	galois_field gf(3, 0xb, 3);
+	std::vector<unsigned> 
+		a = { 2, 3, 0, 0 }, 
+		b = { 2, 3, 0, 0 }, 
+		check = { 4, 0, 5, 0};
+	std::vector<unsigned> c(4), d(4), e(4), f(4);
+	gf.gao_mateer_fft(a, c, 2);
+	gf.gao_mateer_fft(b, d, 2);
+	for (size_t i = 0; i < 4; ++i) {
+		e[i] = gf.multiply(c[i], d[i]);
+	}
+	gf.gao_mateer_ifft(e, f, 2);
+	EXPECT_EQ(f, check);
+}
+
+TEST(gao_mateer_fft, multiply_short_long_poly) {
+	galois_field gf(3, 0xb, 3);
+	std::vector<unsigned>
+		a = { 2, 3, 0, 0, 0, 0, 0, 0 },
+		b = { 2, 3, 6, 0, 0, 0, 0, 0 },
+		check = { 4, 0, 2, 1, 0, 0, 0, 0 };
+	std::vector<unsigned> c(8), d(8), e(8), f(8);
+	gf.gao_mateer_fft(a, c, 3);
+	gf.gao_mateer_fft(b, d, 3);
+	for (size_t i = 0; i < 8; ++i) {
+		e[i] = gf.multiply(c[i], d[i]);
+	}
+	gf.gao_mateer_ifft(e, f, 3);
+	EXPECT_EQ(f, check);
 }

@@ -2,14 +2,16 @@
 # and include sub-projects here.
 #
 cmake_minimum_required (VERSION 3.8)
-
-# Enable Hot Reload for MSVC compilers if supported.
-if (POLICY CMP0141)
-  cmake_policy(SET CMP0141 NEW)
-  set(CMAKE_MSVC_DEBUG_INFORMATION_FORMAT "$<IF:$<AND:$<C_COMPILER_ID:MSVC>,$<CXX_COMPILER_ID:MSVC>>,$<$<CONFIG:Debug,RelWithDebInfo>:EditAndContinue>,$<$<CONFIG:Debug,RelWithDebInfo>:ProgramDatabase>>")
-endif()
+set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 project ("fast_interpolation_reed_solomon_decoder")
 
 # Include sub-projects.
-add_subdirectory ("fast_interpolation_reed_solomon_decoder")
+add_subdirectory("fast_interpolation_reed_solomon_decoder")
+
+add_subdirectory("tests")
+add_executable(decoder main.cpp)
+target_link_libraries(decoder PUBLIC fast_interpolation_reed_solomon_decoder)
+
+target_include_directories(decoder PUBLIC "${PROJECT_BINARY_DIR}" "${PROJECT_SOURCE_DIR}/fast_interpolation_reed_solomon_decoder")
