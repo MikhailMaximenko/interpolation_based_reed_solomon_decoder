@@ -70,7 +70,7 @@ int main(int argc, char* argv[])
 {
 	double k_rate, err_rate;
 	int type;
-	std::ofstream out("berlecamp_decoder_results_0_75rate_half_errs.txt");
+	std::ofstream out("interpolation_decoder_results_0_5rate_max_errs.txt");
 	//out << "hello\n";
 	if (false) {
 		if (argc != 4) {
@@ -103,8 +103,8 @@ int main(int argc, char* argv[])
 	//////test_decoder(gf2, 127, 11, 15);
 
 	////galois_field gf(3, 0xb, 3);
-	std::vector<unsigned> field_sizes = { 3, 4, 5, 6, 7, 9, 10, 11, 12, 13 };
-	std::vector<unsigned> field_generators = { 0xb, 0x13, 0x25, 0x43, 0x83, 0x211, 0x409, 0x805, 0x1053, 0x201b };
+	std::vector<unsigned> field_sizes = { 3, 4, 5, 6, 7, 9, 10, 11, 12, 13, 14, 15, 16};
+	std::vector<unsigned> field_generators = { 0xb, 0x13, 0x25, 0x43, 0x83, 0x211, 0x409, 0x805, 0x1053, 0x201b, 0x4143, 0x8003, 0x1100b };
 	//// 2 2
 	for (size_t i = 0; i < field_sizes.size(); ++i) {
 		galois_field gf(field_sizes[i], field_generators[i], field_sizes[i]);

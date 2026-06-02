@@ -89,38 +89,41 @@ void galois_field::init() {
 	//}
 	////std::cout << "\n";
 	size_t tmp_sizes = _q;
+	size_t cur = tmp_sizes;
 	_emgcd_tmp_polynomials.resize(_m + 3);
 	for (auto& tmp : _emgcd_tmp_polynomials) {
 		for (auto& v : tmp) {
-			v.resize(tmp_sizes);
+			v.resize(2 * cur);
 		}
+		cur >>= 1;
+		++cur;
 	}
 
+	cur = tmp_sizes;
 	_emgcd_tmp_result.resize(_m + 3);
 	for (auto& tmp : _emgcd_tmp_result) {
 		for (auto& v : tmp) {
-			v.first.resize(tmp_sizes);
-			v.second.resize(tmp_sizes);
+			v.first.resize(2 * cur);
+			v.second.resize(2 * cur);
 		}
+		cur >>= 1;
+		++cur;
+
 	}
+	cur = tmp_sizes;
 	_emgcd_tmp_result2.resize(_m + 3);
 	for (auto& tmp : _emgcd_tmp_result2) {
 		for (auto& v : tmp) {
-			v.first.resize(tmp_sizes);
-			v.second.resize(tmp_sizes);
+			v.first.resize(2 * cur);
+			v.second.resize(2 * cur);
 		}
+		cur >>= 1;
+		++cur;
 	}
 
-	_dft_tmp.resize(_m + 1);
-	_idft_tmp.resize(_m + 1);
+	_dft_tmp.resize(1);
 	for (auto& a : _dft_tmp) {
-		a.resize(tmp_sizes);
-		for (auto& v : a) {
-			v.resize(tmp_sizes);
-		}
-	}
-	for (auto& a : _idft_tmp) {
-		a.resize(tmp_sizes);
+		a.resize(2);
 		for (auto& v : a) {
 			v.resize(tmp_sizes);
 		}
@@ -146,8 +149,8 @@ void galois_field::init() {
 
 	std::cout << "initting mult tmps\n";
 	size_t size = 9 * _q;
-	/*
-	for (size_t i = 0; i < _schonhage_dft_tmp.size(); ++i) {
+	
+	/*for (size_t i = 0; i < _schonhage_dft_tmp.size(); ++i) {
 		_schonhage_dft_tmp[i].resize(size);
 		for (auto& v : _schonhage_dft_tmp[i]) {
 			v.resize(size);
@@ -325,32 +328,32 @@ std::vector<unsigned>& galois_field::fast_poly_multiplication(std::vector<unsign
 
 std::vector<unsigned>& galois_field::fast_poly_multiplication(std::vector<unsigned>& a, std::vector<unsigned>& b, std::vector<unsigned>& dst, unsigned length) {
 	++_poly_multiplications;
-	//if (length <= 128 || length > _q / 2) {
+	if (length <= 128 || length > _q / 2) {
 		size_t len = 1 << (sizeof(unsigned) * 8 - std::countl_zero(length - 1));
 		caratsuba_multiplication(a, b, _multiplication_result_tmp, len, 0);
 
-	//}
-	//else if (length <= _q / 2) {
-		//size_t len = 1 << (sizeof(unsigned) * 8 - std::countl_zero(length - 1));
-		//caratsuba_multiplication(a, b, _multiplication_result_tmp, len, 0);
+	}
+	else if (length <= _q / 2) {
+		size_t len = 1 << (sizeof(unsigned) * 8 - std::countl_zero(length - 1));
+		caratsuba_multiplication(a, b, _multiplication_result_tmp, len, 0);
 		//print_poly(_multiplication_result_tmp);
-		//unsigned m = sizeof(unsigned) * 8 - std::countl_zero(length - 1) + 1;
+		unsigned m = sizeof(unsigned) * 8 - std::countl_zero(length - 1) + 1;
 		//std::cout << _q << " " << length << " " << m << "\n";
-		//for (size_t i = 0; i < 3; ++i) {
-			//std::fill(_caratsuba_tmp[0][i].begin(), _caratsuba_tmp[0][i].begin() + _n, 0);
-		//}
+		for (size_t i = 0; i < 3; ++i) {
+			std::fill(_caratsuba_tmp[0][i].begin(), _caratsuba_tmp[0][i].begin() + _n, 0);
+		}
 		//print_poly(a);
 		//print_poly(b);
-		//std::fill(_multiplication_result_tmp.begin(), _multiplication_result_tmp.end(), 0);
-		//gao_mateer_fft(a, _caratsuba_tmp[0][0], m);
-		//gao_mateer_fft(b, _caratsuba_tmp[0][1], m);
-		//for (size_t i = 0; i < (1 << m); ++i) {
-			//_caratsuba_tmp[0][2][i] = multiply(_caratsuba_tmp[0][0][i], _caratsuba_tmp[0][1][i]);
-		//}
+		std::fill(_multiplication_result_tmp.begin(), _multiplication_result_tmp.end(), 0);
+		gao_mateer_fft(a, _caratsuba_tmp[0][0], m);
+		gao_mateer_fft(b, _caratsuba_tmp[0][1], m);
+		for (size_t i = 0; i < (1 << m); ++i) {
+			_caratsuba_tmp[0][2][i] = multiply(_caratsuba_tmp[0][0][i], _caratsuba_tmp[0][1][i]);
+		}
 		//print_poly(_caratsuba_tmp[0][2]);
-		//gao_mateer_ifft(_caratsuba_tmp[0][2], _multiplication_result_tmp, m);
+		gao_mateer_ifft(_caratsuba_tmp[0][2], _multiplication_result_tmp, m);
 		//print_poly(_multiplication_result_tmp);
-	//} /*else {
+	} /*else {
 		//unsigned len = length - 1;
 		//unsigned n = 1;
 		//while (len >= 1) {
@@ -380,7 +383,7 @@ std::vector<unsigned>& galois_field::fast_poly_multiplication(std::vector<unsign
 		}
 		
 	
-	} else {
+	}*/ /*else {
 		unsigned len = length - 1;
 		unsigned n = 1;
 		while (len >= 1) {
@@ -474,14 +477,14 @@ std::array<std::pair<std::vector<unsigned>, std::vector<unsigned>>, 3>&
 	fast_poly_multiplication(result[1].first, locals[2], locals[4]);
 	fast_poly_multiplication(result[2].first, locals[3], locals[1]);
 	
-	add_poly(locals[4], locals[1], locals[0], 0);
-	add_poly(locals[0], result[0].first, locals[4], m); // d
+	add_poly(locals[4], locals[1], locals[0], 0, n + 1);
+	add_poly(locals[0], result[0].first, locals[4], m, n + 1); // d
 	
 	// in some locals may be litter
 	fast_poly_multiplication(result[1].second, locals[2], locals[5]);
 	fast_poly_multiplication(result[2].second, locals[3], locals[1]);
-	add_poly(locals[5], locals[1], locals[0], 0);
-	add_poly(locals[0], result[0].second, locals[5], m); // e
+	add_poly(locals[5], locals[1], locals[0], 0, n + 1);
+	add_poly(locals[0], result[0].second, locals[5], m, n + 1); // e
 
 	unsigned deg_e = degree(locals[5]);
 	if (deg_e < m) {
@@ -511,18 +514,18 @@ std::array<std::pair<std::vector<unsigned>, std::vector<unsigned>>, 3>&
 	// fst part of the answer
 	fast_poly_multiplication(result2[1].first, locals[2], locals[0]);
 	fast_poly_multiplication(result2[2].first, locals[3], locals[1]);
-	add_poly(locals[0], locals[1], locals[4], 0);
+	add_poly(locals[0], locals[1], locals[4], 0, n + 1);
 	swap(locals[0], locals[4]);
 
-	add_poly(locals[0], result2[0].first, locals[4], k); // d
+	add_poly(locals[0], result2[0].first, locals[4], k, n + 1); // d
 
 	// in some locals may be litter
 	fast_poly_multiplication(result2[1].second, locals[2], locals[0]);
 	fast_poly_multiplication(result2[2].second, locals[3], locals[1]);
-	add_poly(locals[0], locals[1], locals[5], 0);
+	add_poly(locals[0], locals[1], locals[5], 0, n + 1);
 	swap(locals[0], locals[5]);
 
-	add_poly(locals[0], result2[0].second, locals[5], k); // e
+	add_poly(locals[0], result2[0].second, locals[5], k, deg_e + 1); // e
 	// locals [0..3] can be reused
 
 	dst[0].first = locals[4];
@@ -530,26 +533,26 @@ std::array<std::pair<std::vector<unsigned>, std::vector<unsigned>>, 3>&
 
 	// multiply matrices (may be optimized)
 	fast_poly_multiplication(result2[2].first, locals[6], locals[0]);
-	add_poly(result2[1].first, locals[0], locals[1], 0);
+	add_poly(result2[1].first, locals[0], locals[1], 0, n + 1);
 
 	fast_poly_multiplication(result2[2].second, locals[6], locals[0]);
-	add_poly(result2[1].second, locals[0], locals[2], 0);
+	add_poly(result2[1].second, locals[0], locals[2], 0, n + 1);
 
 	fast_poly_multiplication(result2[2].first, result[1].first, locals[0]);
 	fast_poly_multiplication(locals[1], result[1].second, locals[3]);
-	add_poly(locals[0], locals[3], dst[1].first, 0);
+	add_poly(locals[0], locals[3], dst[1].first, 0, n + 1);
 
 	fast_poly_multiplication(result2[2].second, result[1].first, locals[0]);
 	fast_poly_multiplication(locals[2], result[1].second, locals[3]);
-	add_poly(locals[0], locals[3], dst[1].second, 0);
+	add_poly(locals[0], locals[3], dst[1].second, 0, n + 1);
 
 	fast_poly_multiplication(result2[2].first, result[2].first, locals[0]);
 	fast_poly_multiplication(locals[1], result[2].second, locals[3]);
-	add_poly(locals[0], locals[3], dst[2].first, 0);
+	add_poly(locals[0], locals[3], dst[2].first, 0, n + 1);
 
 	fast_poly_multiplication(result2[2].second, result[2].first, locals[0]);
 	fast_poly_multiplication(locals[2], result[2].second, locals[3]);
-	add_poly(locals[0], locals[3], dst[2].second, 0);
+	add_poly(locals[0], locals[3], dst[2].second, 0, n + 1);
 	// end multiply 
 
 
@@ -652,9 +655,24 @@ std::vector<unsigned>& galois_field::DFT(std::vector<unsigned>& src, std::vector
 	if (_n == 7 || _n == 63 || _n == 127 || _n == 255 ||
 		_n == 511 || _n == 1023 || _n == 2047 || _n == 4095) {
 		call_fft(*this, src, dst, _n);
+
+		gao_mateer_fft(src, _dft_tmp[0][0], _m);
+		// reorder
+		for (size_t i = 0; i < _n; ++i) {
+			_dft_tmp[0][1][i] = _dft_tmp[0][0][_exp_table[i]];
+		}
+		for (size_t i = 0; i < _n; ++i) {
+			assert(_dft_tmp[0][1][i] == dst[i]);
+		}
+
 	}
 	else {
-		gao_mateer_fft(src, dst, _m);
+		gao_mateer_fft(src, _dft_tmp[0][0], _m);
+		// reorder
+		for (size_t i = 0; i < _n; ++i) {
+			dst[i] = _dft_tmp[0][0][_exp_table[i]];
+		}
+
 	}
 	return dst;
 }
@@ -666,7 +684,12 @@ std::vector<unsigned>& galois_field::IDFT(std::vector<unsigned>& src, std::vecto
 		std::reverse(dst.begin() + 1, dst.begin() + _n);
 	}
 	else {
-		gao_mateer_ifft(src, dst, _m);
+		for (size_t i = 0; i < _n; ++i) {
+			_dft_tmp[0][0][_exp_table[i]] = src[i];
+		}
+		gao_mateer_ifft(_dft_tmp[0][0], _dft_tmp[0][1], _m);
+		_dft_tmp[0][1][0] = add(_dft_tmp[0][1][0], _dft_tmp[0][1][_n]);
+		std::copy(_dft_tmp[0][1].begin(), _dft_tmp[0][1].begin() + _n, dst.begin());
 	}
 	return dst;
 }
@@ -924,7 +947,7 @@ std::vector<unsigned>& galois_field::SCHONHAGE_STRASSEN_FFT(std::vector<unsigned
 		std::copy(tmp[2].begin(), tmp[2].begin() + std::min((size_t)2 * n, dst.size()), dst.begin());
 		return dst;
 	}
-	if (n <= 256) {
+	if (n <= 128) {
 		size_t len = 1 << (sizeof(unsigned) * 8 - std::countl_zero(n - 1) + 1);
 		caratsuba_multiplication(tmp[6], tmp[7], tmp[2], len, 0);
 		add_subpoly_with_modular_shift(tmp[2], tmp[2], 0, 2 * n, 4 * n, n, 2 * n);
@@ -1076,8 +1099,12 @@ void galois_field::split_poly(std::vector<unsigned> const& p, std::vector<unsign
 }
 
 std::vector<unsigned>& galois_field::add_poly(std::vector<unsigned>& a, std::vector<unsigned>& b, std::vector<unsigned>& dst, unsigned m) {
-	std::fill(dst.begin(), dst.end(), 0);
-	for (unsigned i = 0; i < a.size(); ++i) {
+	return add_poly(a, b, dst, m, degree(a) + 1);
+}
+
+std::vector<unsigned>& galois_field::add_poly(std::vector<unsigned>& a, std::vector<unsigned>& b, std::vector<unsigned>& dst, unsigned m, unsigned length) {
+	std::fill(dst.begin(), dst.begin() + std::min(dst.size(), (size_t)length), 0);
+	for (unsigned i = 0; i < std::min(a.size(), (size_t)length); ++i) {
 		if (i < m) {
 			dst[i] = a[i];
 		}

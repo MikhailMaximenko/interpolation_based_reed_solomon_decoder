@@ -59,6 +59,7 @@ struct galois_field
 	unsigned degree(std::vector<unsigned> const&, unsigned, unsigned);
 	std::vector<unsigned>& rev_poly(std::vector<unsigned>&, std::vector<unsigned>&, unsigned);
 	std::vector<unsigned>& add_poly(std::vector<unsigned>&, std::vector<unsigned>&, std::vector<unsigned>&, unsigned);
+	std::vector<unsigned>& add_poly(std::vector<unsigned>&, std::vector<unsigned>&, std::vector<unsigned>&, unsigned, unsigned);
 	std::vector<unsigned>& add_poly_to(std::vector<unsigned>&, std::vector<unsigned>&, unsigned, unsigned);
 	std::vector<unsigned>& sub_poly(std::vector<unsigned>&, std::vector<unsigned>&, std::vector<unsigned>&);
 
