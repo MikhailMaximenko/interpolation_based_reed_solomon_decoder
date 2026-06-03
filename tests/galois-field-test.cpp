@@ -251,3 +251,22 @@ TEST(gao_mateer_fft, multiply_short_long_poly) {
 	gf.gao_mateer_ifft(e, f, 3);
 	EXPECT_EQ(f, check);
 }
+
+
+TEST(gao_mateer_fft, operations_check) {
+	std::vector<unsigned> field_sizes = { 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14};
+	std::vector<unsigned> field_generators = { 0xb, 0x13, 0x25, 0x43, 0x83, 0x11d, 0x211, 0x409, 0x805, 0x1053, 0x201b, 0x4143};
+
+
+	for (size_t i = 0; i < field_sizes.size(); ++i) {
+		unsigned m = field_sizes[i];
+		galois_field gf(m, field_generators[i], m);
+
+		std::vector<unsigned> a(1 << m), b(1 << m);
+		gf.gao_mateer_fft(a, b, m);
+		gf.gao_mateer_fft(a, b, m);
+		gf.gao_mateer_ifft(a, b, m);
+		gf.reset_counters();
+	}
+
+}
