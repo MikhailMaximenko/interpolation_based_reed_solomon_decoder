@@ -24,13 +24,13 @@ galois_field::galois_field(unsigned m, unsigned gen_poly, unsigned poly_size)
 	, _const2(_q, 0)
 	, _a_tmp(_q)
 	, _b_tmp(_q)
-	//, _schonhage_convolution_tmp(5)
-	//, _schonhage_dft_tmp(5)
-	//, _schonhage_dft_results_tmp(5)
-	//, _schonhage_strassen_tmp(5)
+	//, _schonhage_convolution_tmp(3)
+	//, _schonhage_dft_tmp(3)
+	//, _schonhage_dft_results_tmp(3)
+	//, _schonhage_strassen_tmp(3)
 	, _multiplication_result_tmp(4 * _q)
 	, _gcd_tmp_poly(_q)
-	, _caratsuba_tmp(_m + 2)
+	, _karatsuba_tmp(_m + 2)
 	, _taylor_expansion_tmp(_m + 1)
 	, precomputed_basises_delta(_m + 1)
 	, precomputed_basises_gamma(_m)
@@ -148,9 +148,15 @@ void galois_field::init() {
 	}
 
 	std::cout << "initting mult tmps\n";
-	size_t size = 9 * _q;
+	size_t size;
+	/*unsigned len = _q;
+	unsigned n = 1;
+	while (len >= 1) {
+		n *= 3;
+		len /= 3;
+	}
 	
-	/*for (size_t i = 0; i < _schonhage_dft_tmp.size(); ++i) {
+	for (size_t i = 0; i < _schonhage_dft_tmp.size(); ++i) {
 		_schonhage_dft_tmp[i].resize(size);
 		for (auto& v : _schonhage_dft_tmp[i]) {
 			v.resize(size);
@@ -158,7 +164,7 @@ void galois_field::init() {
 		for (auto& v : _schonhage_convolution_tmp[i]) {
 			v.resize(size);
 		}
-		_schonhage_dft_results_tmp[i].resize(10);
+		_schonhage_dft_results_tmp[i].resize(3);
 		for (auto& v : _schonhage_dft_results_tmp[i]) {
 			v.resize(size);
 		}
@@ -169,8 +175,8 @@ void galois_field::init() {
 		++size;
 	}*/
 	size = 1 << (sizeof(unsigned) * 8 - std::countl_zero(_n) + 4);
-	for (size_t i = 0; i < _caratsuba_tmp.size(); ++i) {
-		for (auto& v : _caratsuba_tmp[i]) {
+	for (size_t i = 0; i < _karatsuba_tmp.size(); ++i) {
+		for (auto& v : _karatsuba_tmp[i]) {
 			v.resize(size);
 		}
 		size >>= 1;
@@ -328,58 +334,59 @@ std::vector<unsigned>& galois_field::fast_poly_multiplication(std::vector<unsign
 
 std::vector<unsigned>& galois_field::fast_poly_multiplication(std::vector<unsigned>& a, std::vector<unsigned>& b, std::vector<unsigned>& dst, unsigned length) {
 	++_poly_multiplications;
-	if (length <= 128 || length > _q / 2) {
-		size_t len = 1 << (sizeof(unsigned) * 8 - std::countl_zero(length - 1));
-		caratsuba_multiplication(a, b, _multiplication_result_tmp, len, 0);
+	//if (length < 256 || length > _q / 2) {
+	size_t len = 1 << (sizeof(unsigned) * 8 - std::countl_zero(length - 1));
+	karatsuba_multiplication(a, b, _multiplication_result_tmp, len, 0);
 
-	}
-	else if (length <= _q / 2) {
-		size_t len = 1 << (sizeof(unsigned) * 8 - std::countl_zero(length - 1));
-		caratsuba_multiplication(a, b, _multiplication_result_tmp, len, 0);
-		//print_poly(_multiplication_result_tmp);
-		unsigned m = sizeof(unsigned) * 8 - std::countl_zero(length - 1) + 1;
-		//std::cout << _q << " " << length << " " << m << "\n";
-		for (size_t i = 0; i < 3; ++i) {
-			std::fill(_caratsuba_tmp[0][i].begin(), _caratsuba_tmp[0][i].begin() + _n, 0);
+	//}
+	//else if (length <= _q / 2) {
+	//	size_t len = 1 << (sizeof(unsigned) * 8 - std::countl_zero(length - 1));
+	//	karatsuba_multiplication(a, b, _multiplication_result_tmp, len, 0);
+	//	//print_poly(_multiplication_result_tmp);
+	//	unsigned m = sizeof(unsigned) * 8 - std::countl_zero(length - 1) + 1;
+	//	//std::cout << _q << " " << length << " " << m << "\n";
+	//	for (size_t i = 0; i < 3; ++i) {
+	//		std::fill(_karatsuba_tmp[0][i].begin(), _karatsuba_tmp[0][i].begin() + _n, 0);
+	//	}
+	//	//print_poly(a);
+	//	//print_poly(b);
+	//	std::fill(_multiplication_result_tmp.begin(), _multiplication_result_tmp.end(), 0);
+	//	gao_mateer_fft(a, _karatsuba_tmp[0][0], m);
+	//	gao_mateer_fft(b, _karatsuba_tmp[0][1], m);
+	//	for (size_t i = 0; i < (1 << m); ++i) {
+	//		_karatsuba_tmp[0][2][i] = multiply(_karatsuba_tmp[0][0][i], _karatsuba_tmp[0][1][i]);
+	//	}
+	//	//print_poly(_karatsuba_tmp[0][2]);
+	//	gao_mateer_ifft(_karatsuba_tmp[0][2], _multiplication_result_tmp, m);
+	//	//print_poly(_multiplication_result_tmp);
+	//} 
+	 /*else {
+		unsigned len = length - 1;
+		unsigned n = 1;
+		while (len >= 1) {
+			n *= 3;
+			len /= 3;
 		}
-		//print_poly(a);
-		//print_poly(b);
-		std::fill(_multiplication_result_tmp.begin(), _multiplication_result_tmp.end(), 0);
-		gao_mateer_fft(a, _caratsuba_tmp[0][0], m);
-		gao_mateer_fft(b, _caratsuba_tmp[0][1], m);
-		for (size_t i = 0; i < (1 << m); ++i) {
-			_caratsuba_tmp[0][2][i] = multiply(_caratsuba_tmp[0][0][i], _caratsuba_tmp[0][1][i]);
-		}
-		//print_poly(_caratsuba_tmp[0][2]);
-		gao_mateer_ifft(_caratsuba_tmp[0][2], _multiplication_result_tmp, m);
-		//print_poly(_multiplication_result_tmp);
-	} /*else {
-		//unsigned len = length - 1;
-		//unsigned n = 1;
-		//while (len >= 1) {
-			//n *= 3;
-			//len /= 3;
-		//}
 
 
-		//SCHONHAGE_STRASSEN_FFT(a, b, _multiplication_result_tmp, n, 0);
-	//}*/
+		SCHONHAGE_STRASSEN_FFT(a, b, _multiplication_result_tmp, n, 0);
+	}*/
 	/*if ((length <= 512 && (length > _n / 2 || length < _n / 4)) || length >= 64) {
 	}
 	else if (length <= _q / 2 && length >= _q / 4) {
 		for (size_t i = 0; i < 3; ++i) {
-			std::fill(_caratsuba_tmp[0][i].begin(), _caratsuba_tmp[0][i].begin() + _n, 0);
+			std::fill(_karatsuba_tmp[0][i].begin(), _karatsuba_tmp[0][i].begin() + _n, 0);
 		}
 		std::fill(_multiplication_result_tmp.begin(), _multiplication_result_tmp.end(), 0);
-		exDFT(a, _caratsuba_tmp[0][0]);
-		exDFT(b, _caratsuba_tmp[0][1]);
+		exDFT(a, _karatsuba_tmp[0][0]);
+		exDFT(b, _karatsuba_tmp[0][1]);
 		for (size_t i = 0; i < _q; ++i) {
-			_caratsuba_tmp[0][2][i] = multiply(_caratsuba_tmp[0][0][i], _caratsuba_tmp[0][1][i]);
+			_karatsuba_tmp[0][2][i] = multiply(_karatsuba_tmp[0][0][i], _karatsuba_tmp[0][1][i]);
 		}
 
-		exIDFT(_caratsuba_tmp[0][2], _multiplication_result_tmp);
+		exIDFT(_karatsuba_tmp[0][2], _multiplication_result_tmp);
 		for (size_t i = 0; i < 3; ++i) {
-			std::fill(_caratsuba_tmp[0][i].begin(), _caratsuba_tmp[0][i].begin() + _n, 0);
+			std::fill(_karatsuba_tmp[0][i].begin(), _karatsuba_tmp[0][i].begin() + _n, 0);
 		}
 		
 	
@@ -837,7 +844,9 @@ std::vector<unsigned>& galois_field::SCHONHAGE_CONVOLUTION(std::vector<unsigned>
 		std::copy(tmp[0].begin() + i * block_size, tmp[0].begin() + (i + 1) * block_size, tmp[2].begin());
 		std::copy(tmp[1].begin() + i * block_size, tmp[1].begin() + (i + 1) * block_size, tmp[3].begin());
 		std::fill(tmp[4].begin(), tmp[4].begin() + block_size, 0);
+		//fast_poly_multiplication(tmp[2], tmp[3], tmp[4], 4 * m);
 		SCHONHAGE_STRASSEN_FFT(tmp[2], tmp[3], tmp[4], m, level + 1);
+		//std::cout << degree(tmp[4]) << " " << block_size << "\n";
 		std::copy(tmp[4].begin(), tmp[4].begin() + block_size, tmp[5].begin() + i * block_size);
 		add_subpoly_with_modular_shift(tmp[5], tmp[4], 0, block_size, 2 * block_size, m, block_size);
 	}
@@ -845,22 +854,25 @@ std::vector<unsigned>& galois_field::SCHONHAGE_CONVOLUTION(std::vector<unsigned>
 	return dst;
 }
 
-std::vector<unsigned>& galois_field::caratsuba_multiplication(std::vector<unsigned>& a, std::vector<unsigned>& b, std::vector<unsigned>& dst, unsigned length, unsigned lvl) {
-	auto& tmp = _caratsuba_tmp[lvl];
+std::vector<unsigned>& galois_field::karatsuba_multiplication(std::vector<unsigned>& a, std::vector<unsigned>& b, std::vector<unsigned>& dst, unsigned length, unsigned lvl) {
+	auto& tmp = _karatsuba_tmp[lvl];
 	std::fill(dst.begin(), dst.end(), 0);
-	if (length <= 16) {
-		for (size_t i = 0; i < length; ++i) {
-			for (size_t j = 0; j < length; ++j) {
+	unsigned deg_a = degree(a), deg_b = degree(b);
+	unsigned log_a = sizeof(unsigned) * 8 - std::countl_zero(deg_a - 1);
+	unsigned log_b = sizeof(unsigned) * 8 - std::countl_zero(deg_b - 1);
+	if (length <= 16 || ((log_a * log_a / 2 >= std::min(deg_b, length) || log_b * log_b / 2 >= std::min(deg_a, length))) || std::min(deg_a, deg_b) <= 3) {
+		for (size_t i = 0; i < std::min(deg_a + 1, length); ++i) {
+			for (size_t j = 0; j < std::min(deg_b + 1, length); ++j) {
 				dst[i + j] = add(dst[i + j], multiply(a[i], b[j]));
 			}
 		}
 		return dst;
 	}
-	if (length <= _q / 2 && length >= 128) {
+	if (length <= _q / 2 && std::min(std::max(deg_a, deg_b) + 1, length) >= 256) {
 		for (size_t i = 0; i < 4; ++i) {
 			std::fill(tmp[i].begin(), tmp[i].begin() + _n, 0);
 		}
-		unsigned m = sizeof(unsigned) * 8 - std::countl_zero(length - 1) + 1;
+		unsigned m = sizeof(unsigned) * 8 - std::countl_zero(std::min(std::max(deg_a, deg_b) + 1, length) - 1) + 1;
 		std::fill(_multiplication_result_tmp.begin(), _multiplication_result_tmp.end(), 0);
 		gao_mateer_fft(a, tmp[0], m);
 		gao_mateer_fft(b, tmp[1], m);
@@ -870,7 +882,7 @@ std::vector<unsigned>& galois_field::caratsuba_multiplication(std::vector<unsign
 
 		gao_mateer_ifft(tmp[2], tmp[3], m);
 		/*for (size_t i = 0; i < 3; ++i) {
-			std::fill(_caratsuba_tmp[0][i].begin(), _caratsuba_tmp[0][i].begin() + _n, 0);
+			std::fill(_karatsuba_tmp[0][i].begin(), _karatsuba_tmp[0][i].begin() + _n, 0);
 		}*/
 		std::copy(tmp[3].begin(), tmp[3].begin() + std::min((size_t)length << 1, dst.size()), dst.begin());
 		return dst;
@@ -888,7 +900,7 @@ std::vector<unsigned>& galois_field::caratsuba_multiplication(std::vector<unsign
 
 	//	exIDFT(tmp[2], tmp[3]);
 	//	/*for (size_t i = 0; i < 3; ++i) {
-	//		std::fill(_caratsuba_tmp[0][i].begin(), _caratsuba_tmp[0][i].begin() + _n, 0);
+	//		std::fill(_karatsuba_tmp[0][i].begin(), _karatsuba_tmp[0][i].begin() + _n, 0);
 	//	}*/
 	//	std::copy(tmp[3].begin(), tmp[3].begin() + std::min((size_t)length << 1, dst.size()), dst.begin());
 	//	return dst;
@@ -901,11 +913,11 @@ std::vector<unsigned>& galois_field::caratsuba_multiplication(std::vector<unsign
 	std::copy_n(a.begin() + k, k, tmp[1].begin());
 	std::copy_n(b.begin(), k, tmp[2].begin());
 	std::copy_n(b.begin() + k, k, tmp[3].begin());
-	caratsuba_multiplication(tmp[0], tmp[2], tmp[4], k, lvl + 1); // F0*G0
-	caratsuba_multiplication(tmp[1], tmp[3], tmp[5], k, lvl + 1); // F1*G1
+	karatsuba_multiplication(tmp[0], tmp[2], tmp[4], k, lvl + 1); // F0*G0
+	karatsuba_multiplication(tmp[1], tmp[3], tmp[5], k, lvl + 1); // F1*G1
 	add_poly_to(tmp[0], tmp[1], 0, k);
 	add_poly_to(tmp[2], tmp[3], 0, k);
-	caratsuba_multiplication(tmp[0], tmp[2], tmp[1], k, lvl + 1); // (F0 + F1)*(G0 + G1)
+	karatsuba_multiplication(tmp[0], tmp[2], tmp[1], k, lvl + 1); // (F0 + F1)*(G0 + G1)
 	std::fill(tmp[2].begin(), tmp[2].begin() + (length << 1), 0);
 	add_poly_to(tmp[2], tmp[5], length, length);
 	add_poly_to(tmp[2], tmp[5], k, length);
@@ -947,9 +959,9 @@ std::vector<unsigned>& galois_field::SCHONHAGE_STRASSEN_FFT(std::vector<unsigned
 		std::copy(tmp[2].begin(), tmp[2].begin() + std::min((size_t)2 * n, dst.size()), dst.begin());
 		return dst;
 	}
-	if (n <= 128) {
+	if (n <= _q / 2) {
 		size_t len = 1 << (sizeof(unsigned) * 8 - std::countl_zero(n - 1) + 1);
-		caratsuba_multiplication(tmp[6], tmp[7], tmp[2], len, 0);
+		karatsuba_multiplication(tmp[6], tmp[7], tmp[2], len, 0);
 		add_subpoly_with_modular_shift(tmp[2], tmp[2], 0, 2 * n, 4 * n, n, 2 * n);
 		std::copy(tmp[2].begin(), tmp[2].begin() + std::min((size_t)2 * n, dst.size()), dst.begin());
 		return dst;
@@ -1273,11 +1285,11 @@ std::vector<unsigned>& galois_field::taylor_expansion(std::vector<unsigned>& src
 	add_subpoly(tmp[1], tmp[0], 0, 0, r);
 	add_subpoly(tmp[1], src, r, p + r, n);
 	std::fill(tmp[0].begin(), tmp[0].end(), 0);
-	taylor_expansion(tmp[1], tmp[0], n - p, t);
+	taylor_expansion(tmp[1], tmp[0], p, t);
 	// (g0 + g1x) + (g2 + g3x)(x + x^2) + (g4 + g5x)(x + x^2)^2..
 	// do result
 	std::copy(tmp[2].begin(), tmp[2].begin() + p, dst.begin());
-	std::copy(tmp[0].begin(), tmp[0].begin() + n - p, dst.begin() + p);
+	std::copy(tmp[0].begin(), tmp[0].begin() + p, dst.begin() + p);
 	return dst;
 }
 

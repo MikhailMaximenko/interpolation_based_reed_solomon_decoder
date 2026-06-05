@@ -70,7 +70,7 @@ struct galois_field
 	std::vector<unsigned>& SCHONHAGE_CONVOLUTION(std::vector<unsigned>& , std::vector<unsigned>& , std::vector<unsigned>& , unsigned , unsigned , unsigned , unsigned );
 	std::vector<unsigned>& SCHONHAGE_STRASSEN_FFT(std::vector<unsigned>&, std::vector<unsigned>&, std::vector<unsigned>&, unsigned, unsigned);
 
-	std::vector<unsigned>& caratsuba_multiplication(std::vector<unsigned>&, std::vector<unsigned>&, std::vector<unsigned>&, unsigned, unsigned);
+	std::vector<unsigned>& karatsuba_multiplication(std::vector<unsigned>&, std::vector<unsigned>&, std::vector<unsigned>&, unsigned, unsigned);
 
 	std::vector<unsigned>& taylor_expansion(std::vector<unsigned>&, std::vector<unsigned>&, unsigned, unsigned);
 	std::vector<unsigned>& gao_mateer_fft(std::vector<unsigned>&, std::vector<unsigned>&, unsigned);
@@ -145,7 +145,7 @@ public:
 	std::vector<std::array<std::vector<unsigned>, 8>> _schonhage_strassen_tmp;
 	std::vector<std::array<std::vector<unsigned>, 8>> _schonhage_convolution_tmp;
 
-	std::vector<std::array<std::vector<unsigned>, 8>> _caratsuba_tmp;
+	std::vector<std::array<std::vector<unsigned>, 8>> _karatsuba_tmp;
 	std::vector<std::array<std::vector<unsigned>, 3>> _taylor_expansion_tmp;
 
 	std::vector<std::vector<unsigned>> precomputed_basises_gamma;
