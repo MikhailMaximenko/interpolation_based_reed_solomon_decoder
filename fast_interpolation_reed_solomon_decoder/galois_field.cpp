@@ -24,10 +24,10 @@ galois_field::galois_field(unsigned m, unsigned gen_poly, unsigned poly_size)
 	, _const2(_q, 0)
 	, _a_tmp(_q)
 	, _b_tmp(_q)
-	//, _schonhage_convolution_tmp(3)
-	//, _schonhage_dft_tmp(3)
-	//, _schonhage_dft_results_tmp(3)
-	//, _schonhage_strassen_tmp(3)
+	//, _schonhage_convolution_tmp(5)
+	//, _schonhage_dft_tmp(5)
+	//, _schonhage_dft_results_tmp(5)
+	//, _schonhage_strassen_tmp(5)
 	, _multiplication_result_tmp(4 * _q)
 	, _gcd_tmp_poly(_q)
 	, _karatsuba_tmp(_m + 2)
@@ -155,6 +155,8 @@ void galois_field::init() {
 		n *= 3;
 		len /= 3;
 	}
+
+	size = 9 * n;
 	
 	for (size_t i = 0; i < _schonhage_dft_tmp.size(); ++i) {
 		_schonhage_dft_tmp[i].resize(size);
@@ -174,7 +176,7 @@ void galois_field::init() {
 		size /= 3;
 		++size;
 	}*/
-	size = 1 << (sizeof(unsigned) * 8 - std::countl_zero(_n) + 4);
+	size = 6 << (sizeof(unsigned) * 8 - std::countl_zero(_n) + 4);
 	for (size_t i = 0; i < _karatsuba_tmp.size(); ++i) {
 		for (auto& v : _karatsuba_tmp[i]) {
 			v.resize(size);
@@ -860,7 +862,7 @@ std::vector<unsigned>& galois_field::karatsuba_multiplication(std::vector<unsign
 	unsigned deg_a = degree(a), deg_b = degree(b);
 	unsigned log_a = sizeof(unsigned) * 8 - std::countl_zero(deg_a - 1);
 	unsigned log_b = sizeof(unsigned) * 8 - std::countl_zero(deg_b - 1);
-	if (length <= 16 || ((log_a * log_a / 2 >= std::min(deg_b, length) || log_b * log_b / 2 >= std::min(deg_a, length))) || std::min(deg_a, deg_b) <= 3) {
+	if (length <= _naive_mult_karatsuba/* || ((log_a * log_a / 2 >= std::min(deg_b, length) || log_b * log_b / 2 >= std::min(deg_a, length))) || std::min(deg_a, deg_b) <= 3*/) {
 		for (size_t i = 0; i < std::min(deg_a + 1, length); ++i) {
 			for (size_t j = 0; j < std::min(deg_b + 1, length); ++j) {
 				dst[i + j] = add(dst[i + j], multiply(a[i], b[j]));
@@ -868,7 +870,7 @@ std::vector<unsigned>& galois_field::karatsuba_multiplication(std::vector<unsign
 		}
 		return dst;
 	}
-	if (length <= _q / 2 && std::min(std::max(deg_a, deg_b) + 1, length) >= 256) {
+	if (length <= _q / 2 && std::min(std::max(deg_a, deg_b) + 1, length) >= _karatsuba_mult_gao_mateer) {
 		for (size_t i = 0; i < 4; ++i) {
 			std::fill(tmp[i].begin(), tmp[i].begin() + _n, 0);
 		}
@@ -946,7 +948,7 @@ std::vector<unsigned>& galois_field::SCHONHAGE_STRASSEN_FFT(std::vector<unsigned
 	std::copy(a.begin(), a.begin() + std::min((size_t)2 * n, a.size()), tmp[6].begin());
 	std::copy(b.begin(), b.begin() + std::min((size_t)2 * n, b.size()), tmp[7].begin());
 
-	if (n <= 27) {
+	/*if (n <= _naive_mult_schonhage) {
 		for (size_t i = 0; i < 2 * n; ++i) {
 			for (size_t j = 0; j < 2 * n; ++j) {
 				if (i + j >= dst.size()) {
@@ -958,8 +960,9 @@ std::vector<unsigned>& galois_field::SCHONHAGE_STRASSEN_FFT(std::vector<unsigned
 		add_subpoly_with_modular_shift(tmp[2], tmp[2], 0, 2 * n, 4 * n, n, 2 * n);
 		std::copy(tmp[2].begin(), tmp[2].begin() + std::min((size_t)2 * n, dst.size()), dst.begin());
 		return dst;
-	}
-	if (n <= _q / 2) {
+	}*/
+	//std::cout << n << " " << _karatsuba_mult_schonhage << "\n";
+	if (n <= _karatsuba_mult_schonhage) {
 		size_t len = 1 << (sizeof(unsigned) * 8 - std::countl_zero(n - 1) + 1);
 		karatsuba_multiplication(tmp[6], tmp[7], tmp[2], len, 0);
 		add_subpoly_with_modular_shift(tmp[2], tmp[2], 0, 2 * n, 4 * n, n, 2 * n);

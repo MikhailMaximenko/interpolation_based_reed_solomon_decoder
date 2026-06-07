@@ -161,5 +161,10 @@ public:
 	mutable size_t _adds_during_inverse = 0;
 	mutable size_t _muls_during_inverse = 0;
 
+	unsigned _naive_mult_schonhage = 27;
+	unsigned _naive_mult_karatsuba = 16;
+	unsigned _karatsuba_mult_schonhage = 256;
+	unsigned _karatsuba_mult_gao_mateer = 256;
+	unsigned _naive_mult_logarithmic_mult_mateer = 256;
 
 };
