@@ -862,7 +862,7 @@ std::vector<unsigned>& galois_field::karatsuba_multiplication(std::vector<unsign
 	unsigned deg_a = degree(a), deg_b = degree(b);
 	unsigned log_a = sizeof(unsigned) * 8 - std::countl_zero(deg_a - 1);
 	unsigned log_b = sizeof(unsigned) * 8 - std::countl_zero(deg_b - 1);
-	if (length <= _naive_mult_karatsuba/* || ((log_a * log_a / 2 >= std::min(deg_b, length) || log_b * log_b / 2 >= std::min(deg_a, length))) || std::min(deg_a, deg_b) <= 3*/) {
+	if (length <= _naive_mult_karatsuba || ((log_a * log_a / 2 >= std::min(deg_b, length) || log_b * log_b / 2 >= std::min(deg_a, length))) || std::min(deg_a, deg_b) <= 3) {
 		for (size_t i = 0; i < std::min(deg_a + 1, length); ++i) {
 			for (size_t j = 0; j < std::min(deg_b + 1, length); ++j) {
 				dst[i + j] = add(dst[i + j], multiply(a[i], b[j]));
@@ -881,7 +881,6 @@ std::vector<unsigned>& galois_field::karatsuba_multiplication(std::vector<unsign
 		for (size_t i = 0; i < (1 << m); ++i) {
 			tmp[2][i] = multiply(tmp[0][i], tmp[1][i]);
 		}
-
 		gao_mateer_ifft(tmp[2], tmp[3], m);
 		/*for (size_t i = 0; i < 3; ++i) {
 			std::fill(_karatsuba_tmp[0][i].begin(), _karatsuba_tmp[0][i].begin() + _n, 0);
@@ -889,6 +888,7 @@ std::vector<unsigned>& galois_field::karatsuba_multiplication(std::vector<unsign
 		std::copy(tmp[3].begin(), tmp[3].begin() + std::min((size_t)length << 1, dst.size()), dst.begin());
 		return dst;
 	}
+
 	//else if (length <= (_q >> 1) && length >= _q / 8) {
 	//	for (size_t i = 0; i < 4; ++i) {
 	//		std::fill(tmp[i].begin(), tmp[i].begin() + _n, 0);
