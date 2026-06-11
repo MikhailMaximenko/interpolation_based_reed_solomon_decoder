@@ -1,14 +1,14 @@
 set encoding cp1251
 unset title 
-set xlabel 'Длина'
-set ylabel 'Количество операций'
+set xlabel 'Р”Р»РёРЅР°'
+set ylabel 'РљРѕР»РёС‡РµСЃС‚РІРѕ РѕРїРµСЂР°С†РёР№'
 unset grid
 set logscale y
 set logscale x
 set xtics
 set ytics
-set terminal pngcairo size 1024,768 font "Arial, 12"
+set terminal pngcairo size 1024,768 font "Sans, 12"
 set output 'cmp_gao_karatsuba.png'
-plot 'gao_mateer1.txt' using ($1):($2 + $3) with linespoints title 'Алгоритм Гао-Матира' noenhanced, \
-    'karatsuba16.txt' using ($1):($2 + $3) with linespoints title 'Алгоритм Карацубы, 16' noenhanced, \
-    'karatsuba32.txt' using ($1):($2 + $3) with linespoints title 'Алгоритм Карацубы, 32' noenhanced, \
+plot 'gao_mateer1.txt' using ($1):($2 + $3) with linespoints title 'РђР»РіРѕСЂРёС‚Рј Р“Р°Рѕ-РњР°С‚РёСЂР°' noenhanced, \
+    'karatsuba16.txt' using ($1):($2 + $3) with linespoints title 'РђР»РіРѕСЂРёС‚Рј РљР°СЂР°С†СѓР±С‹, 16' noenhanced, \
+    'karatsuba32.txt' using ($1):($2 + $3) with linespoints title 'РђР»РіРѕСЂРёС‚Рј РљР°СЂР°С†СѓР±С‹, 32' noenhanced, \

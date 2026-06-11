@@ -164,7 +164,7 @@ public:
 	unsigned _naive_mult_schonhage = 27;
 	unsigned _naive_mult_karatsuba = 16;
 	unsigned _karatsuba_mult_schonhage = 256;
-	unsigned _karatsuba_mult_gao_mateer = 1024;
+	unsigned _karatsuba_mult_gao_mateer = 256;
 	unsigned _naive_mult_logarithmic_mult_mateer = 256;
 
 };
