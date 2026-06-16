@@ -53,6 +53,10 @@ void galois_field::init() {
 		x <<= 1;
 		x = x ^ ((x & (1 << _poly_size)) ? _gen_poly : 0);
 	}
+	std::cout << "exp table: ";
+	print_poly(_exp_table);
+	std::cout << "log table: ";
+	print_poly(_log_table);
 
 	// code for cantor basis
 	// evaluate s
@@ -147,7 +151,7 @@ void galois_field::init() {
 		tmp.resize(tmp_sizes);
 	}
 
-	std::cout << "initting mult tmps\n";
+	//std::cout << "initting mult tmps\n";
 	size_t size;
 	unsigned len = _q;
 	unsigned n = 1;
@@ -184,7 +188,7 @@ void galois_field::init() {
 		size >>= 1;
 	}
 
-	std::cout << "initting gao-mateer subspaces\n";
+	//std::cout << "initting gao-mateer subspaces\n";
 	unsigned max_m = _m;
 	for (size_t i = max_m; i >= 1; --i) {
 		for (auto& v : _taylor_expansion_tmp[i]) {
@@ -658,6 +662,20 @@ std::vector<unsigned>& galois_field::SOLVE_TOEPITZ(std::vector<unsigned>& a, std
 	return multipy_poly_by_const(remainder_of_power(add_poly(_solve_toeplitz_tmp[1], _solve_toeplitz_tmp[2], dst, 0), n + 1), inverse(_ad_x[0]));
 }
 
+bool galois_field::CHECK_TOEPLITZ(std::vector<unsigned>& a, std::vector<unsigned>& b, std::vector<unsigned>& eta, unsigned t) {
+	for (size_t i = 0; i < t; ++i) {
+		unsigned cur = 0;
+		for (size_t j = 0; j < t; ++j) {
+			cur = add(cur, multiply(a[t - 1 + i - j], eta[j]));
+		}
+		if (cur != b[i]) {
+			return false;
+		}
+	}
+	return true;
+
+}
+
 
 std::vector<unsigned>& galois_field::DFT(std::vector<unsigned>& src, std::vector<unsigned>& dst) {
 	// call fft
@@ -1114,7 +1132,7 @@ void galois_field::split_poly(std::vector<unsigned> const& p, std::vector<unsign
 }
 
 std::vector<unsigned>& galois_field::add_poly(std::vector<unsigned>& a, std::vector<unsigned>& b, std::vector<unsigned>& dst, unsigned m) {
-	return add_poly(a, b, dst, m, degree(a) + 1);
+	return add_poly(a, b, dst, m, std::max(degree(a) + 1, degree(b) + 1 > m ? degree(b) + 1 - m : 0));
 }
 
 std::vector<unsigned>& galois_field::add_poly(std::vector<unsigned>& a, std::vector<unsigned>& b, std::vector<unsigned>& dst, unsigned m, unsigned length) {

@@ -55,6 +55,9 @@ struct galois_field
 
 	std::vector<unsigned>& SOLVE_TOEPITZ(std::vector<unsigned>&, std::vector<unsigned>&, unsigned, std::vector<unsigned>&);
 
+	bool CHECK_TOEPLITZ(std::vector<unsigned>&, std::vector<unsigned>&, std::vector<unsigned>&, unsigned);
+
+
 	unsigned degree(std::vector<unsigned> const&);
 	unsigned degree(std::vector<unsigned> const&, unsigned, unsigned);
 	std::vector<unsigned>& rev_poly(std::vector<unsigned>&, std::vector<unsigned>&, unsigned);
