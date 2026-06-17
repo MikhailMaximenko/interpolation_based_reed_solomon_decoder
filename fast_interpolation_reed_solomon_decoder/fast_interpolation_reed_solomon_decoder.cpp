@@ -29,14 +29,7 @@ std::vector<unsigned> InterpolationBasedFastRSDecoder::encode(std::vector<unsign
 
 
 void InterpolationBasedFastRSDecoder::decode(std::vector<unsigned>& cw) {
-	// g <=> tmp[0]
-	//_gf.print_poly(cw);
 	_gf.IDFT(cw, _tmp[0]);
-	_gf.print_poly(_tmp[0]);
-	for (auto v : _tmp[0]) {
-		std::cout << _gf._log_table[v] << " ";
-	}
-	std::cout << "\n";
 	if (_gf.degree(_tmp[0]) <= _k) {
 		return ;
 	}
@@ -45,56 +38,29 @@ void InterpolationBasedFastRSDecoder::decode(std::vector<unsigned>& cw) {
 	}
 	_gf.IDFT(cw, _tmp[0]);
 
-	//_tmp[2][0] = 1;
-	//_tmp[2][_n] = 1;
 	size_t max_t = (_n - _k) / 2;
 	std::copy(_tmp[0].begin() + _n - 2 * max_t + 1, _tmp[0].begin() + _n, _tmp[1].begin());
 
 	std::reverse(_tmp[1].begin(), _tmp[1].begin() + 2 * max_t);
 	_tmp[2][2 * max_t] = 1;
-	//std::cout << "here1\n";
 	_gf.EMGCD(_tmp[2], _tmp[1], _emgcd_tmp, 0);
-	//std::cout << "here2\n";
 
 	size_t fst_deg = _gf.degree(_emgcd_tmp[0].first);
 	size_t t = _gf.degree(_emgcd_tmp[2].second);
 	std::cout << "errors amount: " << t << "\n";
 	std::fill(_tmp[3].begin(), _tmp[3].end(), 0);
 	std::fill(_tmp[2].begin(), _tmp[2].end(), 0);
-	//std::fill(_tmp[2].begin(), _tmp[2].end(), 0);
 	std::fill(_tmp[1].begin(), _tmp[1].end(), 0);
 
 	if (t != 0) {
 		std::copy(_tmp[0].begin() + _n - 2 * t + 1, _tmp[0].begin() + _n, _tmp[1].begin());
 		std::reverse(_tmp[1].begin(), _tmp[1].begin() + 2 * t - 1);
-		std::cout << "a poly: ";
-		_gf.print_poly(_tmp[1]);
-		for (auto v : _tmp[1]) {
-			std::cout << _gf._log_table[v] << " ";
-		}
-
-		std::cout << "\n";
 		std::copy(_tmp[0].begin() + _n - 2 * t, _tmp[0].begin() + _n - t, _tmp[2].begin());
 		std::reverse(_tmp[2].begin(), _tmp[2].begin() + t);
-		std::cout << "b poly: ";
-		_gf.print_poly(_tmp[2]);
-		for (auto v : _tmp[2]) {
-			std::cout << _gf._log_table[v] << " ";
-		}
-		std::cout << "\n";
 		_gf.SOLVE_TOEPITZ(_tmp[1], _tmp[2], t - 1, _tmp[3]);
-		std::cout << "eta: ";
-		_gf.print_poly(_tmp[3]);
-		for (auto v : _tmp[3]) {
-			std::cout << _gf._log_table[v] << " ";
-		}
-
-		assert(_gf.CHECK_TOEPLITZ(_tmp[1], _tmp[2], _tmp[3], t));
-		// check teplitz solution
 
 
 
-		std::cout << "\n";
 		std::copy(_tmp[3].begin(), _tmp[3].begin() + t, _tmp[4].begin() + 1);
 		std::copy(_tmp[0].begin() + _k, _tmp[0].begin() + _k + t, _tmp[5].begin());
 		//std::reverse(_tmp[3].begin(), _tmp[3].begin() + t + 1); // D(x)
@@ -108,11 +74,7 @@ void InterpolationBasedFastRSDecoder::decode(std::vector<unsigned>& cw) {
 
 
 		using std::swap;
-		_gf.print_poly(_tmp[0]);
-		//swap(cw, _tmp[1]);
 		_gf.DFT(_tmp[0], _tmp[2]);
-		std::cout << "errs: ";
-		_gf.print_poly(_tmp[2]);
 		_gf.add_poly(cw, _tmp[2], _tmp[1], 0, cw.size());
 		std::copy(_tmp[1].begin(), _tmp[1].begin() + cw.size(), cw.begin());
 	}

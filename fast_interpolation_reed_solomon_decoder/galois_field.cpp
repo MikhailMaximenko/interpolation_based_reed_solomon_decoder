@@ -473,6 +473,16 @@ std::array<std::pair<std::vector<unsigned>, std::vector<unsigned>>, 3>&
 	for (auto& v : locals) {
 		std::fill(v.begin(), v.end(), 0);
 	}
+	for (auto& v : _emgcd_tmp_result[tmp_num]) {
+
+		std::fill(v.first.begin(), v.first.end(), 0);
+		std::fill(v.second.begin(), v.second.end(), 0);
+	}
+	for (auto& v : _emgcd_tmp_result2[tmp_num]) {
+
+		std::fill(v.first.begin(), v.first.end(), 0);
+		std::fill(v.second.begin(), v.second.end(), 0);
+	}
 	std::array<std::pair<std::vector<unsigned>, std::vector<unsigned>>, 3>& result = _emgcd_tmp_result[tmp_num];
 	// tmp layout:
 	// b0   b1   c0   c1   d    e    q    f    
@@ -606,6 +616,12 @@ std::vector<unsigned>& galois_field::GCD(std::vector<unsigned> const& a, std::ve
 void galois_field::AD(std::vector<unsigned>& a, unsigned n, std::vector<unsigned>& dst1, std::vector<unsigned>& dst2) {
 	for (auto& v : _ad_tmp_polinomyals) {
 		std::fill(v.begin(), v.end(), 0);
+	}
+	for (auto& v : _ad_tmp_emgcd_results) {
+		for (auto& res : v) {
+			std::fill(res.first.begin(), res.first.end(), 0);
+			std::fill(res.second.begin(), res.second.end(), 0);
+		}
 	}
 	_ad_tmp_polinomyals[0][2 * n + 1] = 1;
 	_ad_tmp_polinomyals[1] = a;
